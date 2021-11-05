@@ -1,4 +1,4 @@
-A fork of kabutor of  Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
+A fork of kabutor fork of  Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
 Retrieve the best matching subtitle (in spanish) for a show episode from subdivx.com
 
 Working with Python 3.9.3 version 
