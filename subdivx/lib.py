@@ -6,16 +6,12 @@ import urllib.parse
 
 from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
-
+from rarfile import is_rarfile
 from bs4 import BeautifulSoup
 
 PYTHONUTF8=1
 
-RAR_ID = b"Rar!\x1a\x07\x00"
-RAR5_ID = b"Rar!\x1A\x07\x01\x00"
-
 SUBDIVX_SEARCH_URL = "https://www.subdivx.com/index.php"
-
 
 SUBDIVX_DOWNLOAD_MATCHER = {'name':'a', 'rel':"nofollow", 'target': "new"}
 
@@ -23,25 +19,9 @@ LOGGER_LEVEL = logging.INFO
 LOGGER_FORMATTER = logging.Formatter('%(asctime)-25s %(levelname)-8s %(name)-29s %(message)s', '%Y-%m-%d %H:%M:%S')
 
 s = requests.Session()
-proxies = { "http":"http://127.0.0.1:8080" }
-#s.proxies.update(proxies)
 
 class NoResultsError(Exception):
     pass
-
-
-def is_rarfile(fn):
-    '''Check quickly whether file is rar archive.'''
-    buf = open(fn, "rb").read(len(RAR_ID))
-    #print (buf)
-    return buf == RAR_ID
-
-def is_rar5file(fn):
-    '''Check quickly whether file is rar5 archive.'''
-    buf = open(fn, "rb").read(len(RAR5_ID))
-    #print (buf)
-    return buf == RAR5_ID
-
 
 def setup_logger(level):
     global logger
@@ -118,7 +98,7 @@ def get_subtitle_url(title, number, metadata, choose=False):
 
 
 def get_subtitle(url, path):
-    temp_file = NamedTemporaryFile()
+    temp_file = NamedTemporaryFile(delete=False)
     logger.info(f"downloading https://www.subdivx.com/{url}")
     
     temp_file.write(s.get('https://www.subdivx.com/' + url).content)
@@ -134,7 +114,7 @@ def get_subtitle(url, path):
 
         zip_file.close()
 
-    elif (is_rarfile(temp_file.name) or is_rar5file(temp_file.name)):
+    elif (is_rarfile(temp_file.name)):
         rar_path = path + '.rar'
         logger.info('Saving rared subtitle as %s' % rar_path)
         with open(rar_path, 'wb') as out_file:
@@ -155,3 +135,4 @@ def get_subtitle(url, path):
 
 
     temp_file.close()
+    os.unlink(temp_file.name)
