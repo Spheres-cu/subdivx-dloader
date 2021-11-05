@@ -1,5 +1,12 @@
 Changelog
 =========
+0.8 (2021-11-05)
+----------------
+Forked [kabutor]
+
+-  Fix error [Errno 13] Permission denied in Windows :  Fixed  with NamedTemporaryFile(delete=False) and delete temp_file with os.unlink(temp_file.name)
+-  Added rarfile  and delete is_rarfile() and is_rar5file  and sustitute for is_rarfile() of rarfile API
+-  Added torrentgalaxy keyword
 
 0.7 (2021-02-17)
 ----------------
