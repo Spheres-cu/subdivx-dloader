@@ -61,7 +61,8 @@ _keywords = (
     'sfm',
     'sva',
     'sparks',
-    'turbo'
+    'turbo',
+    'torrentgalaxy'
 )
 
 _codecs = ('xvid', 'x264', 'h264', 'x265')
