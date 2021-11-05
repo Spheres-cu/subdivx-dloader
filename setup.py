@@ -5,22 +5,22 @@ from setuptools import setup
 long_description = open('README.md').read() + '\n' + open('HISTORY.md').read()
 
 setup(
-    name='subdivx-download',
-    version='0.7',
+    name='subdivx-downloader',
+    version='0.1',
     description='A command line tool to download the best matching subtitle from subdivx.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    author=u"Kabu",
-    author_email='spam@gmail.com',
-    url='https://github.com/kabutor/subdivx-download',
+    author=u"Spheres-cu",
+    author_email='Spheres-cu@gmail.com',
+    url='https://github.com/Spheres-cu/subdivx-downloader',
     packages=['subdivx',],
     license='GNU GENERAL PUBLIC LICENCE v3.0',
-    install_requires=['beautifulsoup4', 'tvnamer', 'guessit'],
+    install_requires=['beautifulsoup4', 'tvnamer', 'guessit', 'rarfile'],
     entry_points={
         'console_scripts': ['subdivx=subdivx.cli:main'],
     },
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 1 - Beta',
         'Environment :: Console',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: GNU General Public License (GPL)',
