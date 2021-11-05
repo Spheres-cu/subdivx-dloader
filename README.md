@@ -1,7 +1,7 @@
-A fork of Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
+A fork of kabutor of  Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
 Retrieve the best matching subtitle (in spanish) for a show episode from subdivx.com
 
-Python3 version wasn't working, I just fixed for the actual website (subdivx.com) 
+Working with Python 3.9.3 version 
 
 Also added these features:
 
@@ -16,7 +16,7 @@ Also added these features:
 Install
 -------
 ```
-$ git clone https://github.com/kabutor/subdivx-download
+$ git clone https://github.com/Spheres-cu/subdivx-downloader
 python3 setup.py 
 ```
 
@@ -31,6 +31,7 @@ pip install guessit
 pip install html5lib
 pip install tvnamer
 pip install beautifulsoup4
+pip install rarfile
 ```
 
 
