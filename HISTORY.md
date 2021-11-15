@@ -1,5 +1,16 @@
 Changelog
 =========
+
+0.9 (2021-11-15)
+---------------
+- Redited cli.py, now you no longer need lib.py, all necessary modules and dependencies are in cli.py
+
+- Added the colorama module to enable the color output of texts in multiplatform (Win, Linux, Mac)
+
+- Now allows you to cancel the download in "choose" mode (-c), also avoid entering an invalid number in the options. Also exit with some keyboard interrupt (Ex. Control + C in Win)
+
+-An error is thrown if you do not have access to the Internet when searching for subtitles.
+
 0.8 (2021-11-05)
 ----------------
 Forked [kabutor]
