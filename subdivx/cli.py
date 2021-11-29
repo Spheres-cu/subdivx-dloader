@@ -76,7 +76,10 @@ def get_subtitle_url(title, number, metadata, choose=False):
         t.nextSibling(id='buscador_detalle_sub')[0].text: t.next('a')[0]['href'] for t in titles
         if all(word.lower() in t.text.lower() for word in buscar.split())
     }
-
+    descriptions_data = {
+        t.nextSibling(id='buscador_detalle_sub_datos')[0].text: t.next('a')[0]['href'] for t in titles
+        if all(word.lower() in t.text.lower() for word in buscar.split())
+    }
     if not descriptions:
         raise NoResultsError(f'No suitable subtitles were found for: "{buscar}"')
 
@@ -98,13 +101,15 @@ def get_subtitle_url(title, number, metadata, choose=False):
         scores.append(score)
 
     results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
+    results2 = sorted(zip(descriptions_data.items(), scores), key=lambda item: item[1], reverse=True)   
     # Print video infos
     print("\n\033[33m>> Subtítulo: " + str(title) + " " + str(number).upper() + "\n\033[0m")
 
     if (choose):
         count = 0
         for item in (results):
-            print ("  \033[92m [%i] ===> \033[0m %s \n" % (count , tr.fill("% s" %item[0][0], width=110)))
+            print ("  \033[92m [%i] ===> \033[0m %s " % (count , tr.fill(str(item[0][0]), width=180)))
+            print("     \033[33m Detalles: \033[0m %s \r" % (tr.fill(str(results2[count][0][0]), width=180)))
             count = count +1
         print("\033[31m [" + str(count) + "] \033[0m Cancelar descarga\n")
         res = -1
