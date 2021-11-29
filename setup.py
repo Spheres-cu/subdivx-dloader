@@ -6,7 +6,7 @@ long_description = open('README.md').read() + '\n' + open('HISTORY.md').read()
 
 setup(
     name='subdivx-downloader',
-    version='0.2',
+    version='0.3',
     description='A command line tool to download the best matching subtitle from subdivx.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -20,7 +20,7 @@ setup(
         'console_scripts': ['subdivx=subdivx.cli:main'],
     },
     classifiers=[
-        'Development Status :: 2 - Beta',
+        'Development Status :: 3 - Beta',
         'Environment :: Console',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: GNU General Public License (GPL)',
