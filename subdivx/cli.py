@@ -19,6 +19,16 @@ from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
 
 init()
+# For Developers can make a .exe in Windows
+# def resource_path(relative_path):
+#     """ Get absolute path to resource, works for dev and for PyInstaller """
+#     try:
+#         # PyInstaller creates a temp folder and stores path in _MEIPASS
+#         base_path = sys._MEIPASS
+#     except Exception:
+#         base_path = os.path.abspath(".")
+
+#     return os.path.join(base_path, relative_path)
 
 PYTHONUTF8=1
 
@@ -30,6 +40,12 @@ LOGGER_LEVEL = logging.INFO
 LOGGER_FORMATTER = logging.Formatter('%(asctime)-25s %(levelname)-8s %(name)-29s %(message)s', '%Y-%m-%d %H:%M:%S')
 
 s = requests.Session()
+
+# For setting a proxy, change 127.0.0.1:3128 for your host and port
+# s.proxies = {
+#   "http": "http://127.0.0.1:3128",
+#   "https": "http://127.0.0.1:3128",
+# }
 
 class NoResultsError(Exception):
     pass
@@ -54,12 +70,11 @@ def get_subtitle_url(title, number, metadata, choose=False):
     params = {"accion": 5,
      "subtitulos": 1,
      "realiza_b": 1,
-     "oxdown": 1,
-     "buscar": buscar ,
+     "buscar2": buscar ,
     }
-    s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0"})
+    s.headers.update({"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"})
     try:
-        page = s.get(SUBDIVX_SEARCH_URL, params=params).text
+        page = s.post(SUBDIVX_SEARCH_URL, params=params).text
     except OSError:
         print("\n \033[31m [Error,", "Connection error! \033[0m", "Unable to reach https://www.subdivx.com servers!\n\n \033[0;33m Please check:\033[0m\n" + \
                 "- Your Internet connection\n" + \
@@ -101,7 +116,7 @@ def get_subtitle_url(title, number, metadata, choose=False):
         scores.append(score)
 
     results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
-    results2 = sorted(zip(descriptions_data.items(), scores), key=lambda item: item[1], reverse=True)   
+    results2 = sorted(zip(descriptions_data.items(), scores), key=lambda item: item[1], reverse=True)
     # Print video infos
     print("\n\033[33m>> Subtítulo: " + str(title) + " " + str(number).upper() + "\n\033[0m")
 
@@ -109,7 +124,10 @@ def get_subtitle_url(title, number, metadata, choose=False):
         count = 0
         for item in (results):
             print ("  \033[92m [%i] ===> \033[0m %s " % (count , tr.fill(str(item[0][0]), width=180)))
-            print("     \033[33m Detalles: \033[0m %s \r" % (tr.fill(str(results2[count][0][0]), width=180)))
+            try:
+                print("     \033[33m Detalles: \033[0m %s \r" % (tr.fill(str(results2[count][0][0]), width=180)))
+            except IndexError:
+                pass   
             count = count +1
         print("\033[31m [" + str(count) + "] \033[0m Cancelar descarga\n")
         res = -1
@@ -162,6 +180,11 @@ def get_subtitle(url, path):
         try:
             import subprocess
             #extract all .srt in the rared file
+            
+            # For Make a .exe in Windows
+            #unrar_path = resource_path('unrar.exe')
+            #ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', rar_path])
+            
             ret_code = subprocess.call(['unrar', 'e', '-inul', '-n*srt', '-n*txt', rar_path])
             if ret_code == 0:
                 logger.info('Unpacking rared subtitle to %s' % os.path.dirname(path))
