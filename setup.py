@@ -20,7 +20,7 @@ setup(
         'console_scripts': ['subdivx=subdivx.cli:main'],
     },
     classifiers=[
-        'Development Status :: 3 - Beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: GNU General Public License (GPL)',
