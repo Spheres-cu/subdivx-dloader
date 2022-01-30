@@ -339,7 +339,7 @@ def main():
         
         try:
             info = guessit(filename)
-            number = f"s{info['season']:02}e{info['episode']:02}" if info["type"] == "episode" else info["year"]
+            number = f"s{info['season']:02}e{info['episode']:02}" if info["type"] == "episode" else ""
 
             metadata = extract_meta_data(filename, args.keyword)
             
