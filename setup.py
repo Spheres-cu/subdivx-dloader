@@ -6,7 +6,7 @@ long_description = open('README.md').read() + '\n' + open('HISTORY.md').read()
 
 setup(
     name='subdivx-downloader',
-    version='0.3',
+    version='0.4',
     description='A command line tool to download the best matching subtitle from subdivx.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
