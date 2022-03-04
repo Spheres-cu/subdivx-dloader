@@ -292,13 +292,14 @@ def subtitle_renamer(filepath):
     before = set(os.listdir(dirpath))
     yield
     after = set(os.listdir(dirpath))
+    # Fix windows error for rename various subtitles with same filename
+    filecount = 0
     for new_file in after - before:
         if not new_file.lower().endswith('srt'):
             # only apply to subtitles
             continue
         filename = extract_name(filepath)
-        # Fix windows error for rename various subtitles with same filename
-        filecount = 0
+
         try:
            os.rename(new_file, filename + '.srt')
         except WindowsError:
