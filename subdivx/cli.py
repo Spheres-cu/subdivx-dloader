@@ -4,7 +4,8 @@ import os
 import sys
 import logging
 import argparse
-import requests 
+import certifi
+import urllib3
 import urllib.parse
 import textwrap as tr
 import logging.handlers
@@ -19,33 +20,33 @@ from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
 
 init()
-# For Developers can make a .exe in Windows
-# def resource_path(relative_path):
-#     """ Get absolute path to resource, works for dev and for PyInstaller """
-#     try:
-#         # PyInstaller creates a temp folder and stores path in _MEIPASS
-#         base_path = sys._MEIPASS
-#     except Exception:
-#         base_path = os.path.abspath(".")
 
-#     return os.path.join(base_path, relative_path)
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 PYTHONUTF8=1
 
-SUBDIVX_SEARCH_URL = "https://www.subdivx.com/index.php"
+SUBDIVX_SEARCH_URL = 'https://www.subdivx.com/index.php'
 
 SUBDIVX_DOWNLOAD_MATCHER = {'name':'a', 'rel':"nofollow", 'target': "new"}
 
 LOGGER_LEVEL = logging.INFO
+
 LOGGER_FORMATTER = logging.Formatter('%(asctime)-25s %(levelname)-8s %(name)-29s %(message)s', '%Y-%m-%d %H:%M:%S')
 
-s = requests.Session()
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-# For setting a proxy, change 127.0.0.1:3128 for your host and port
-# s.proxies = {
-#   "http": "http://127.0.0.1:3128",
-#   "https": "http://127.0.0.1:3128",
-# }
+s = urllib3.PoolManager(ca_certs=certifi.where())
+
+#Proxy
+#s = urllib3.ProxyManager('http://proxy:port/')
 
 class NoResultsError(Exception):
     pass
@@ -67,21 +68,22 @@ def get_subtitle_url(title, number, metadata, choose=False):
     title_f = [ x for x in title.split() if "\'s" not in x ]
     title = ' '.join(title_f)
     buscar = f"{title} {number}"
-    params = {"accion": 5,
-     "subtitulos": 1,
-     "realiza_b": 1,
-     "buscar2": buscar ,
-    }
-    s.headers.update({"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"})
+
     try:
-        page = s.post(SUBDIVX_SEARCH_URL, params=params).text
-    except OSError:
+        page = s.request(
+            'POST',
+            SUBDIVX_SEARCH_URL,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"},
+            fields={'accion': 5, 'subtitulos': '1', 'realiza_b': '1', 'buscar2': buscar}
+        ).data.decode('iso-8859-1')
+
+    except urllib3.exceptions.NewConnectionError:
         print("\n \033[31m [Error,", "Connection error! \033[0m", "Unable to reach https://www.subdivx.com servers!\n\n \033[0;33m Please check:\033[0m\n" + \
                 "- Your Internet connection\n" + \
                 "- Your Firewall connections\n" + \
                 "- www.subdivx.com availability\n")
         sys.exit(1)
-
+   
     soup = BeautifulSoup(page, 'html5lib')
     titles = soup('div', id='menu_detalle_buscador')
 
@@ -122,6 +124,7 @@ def get_subtitle_url(title, number, metadata, choose=False):
 
     if (choose):
         count = 0
+        sys.stdout.reconfigure(encoding='iso-8859-1')
         for item in (results):
             print ("  \033[92m [%i] ===> \033[0m %s " % (count , tr.fill(str(item[0][0]), width=180)))
             try:
@@ -142,13 +145,13 @@ def get_subtitle_url(title, number, metadata, choose=False):
         if (res == count):
             print("\n \033[31m Cancelando descarga...\033[0m")
             sys.exit(0)
-        url = (results[res][0][1]).encode("utf-8")
+        url = (results[res][0][1])
+        sys.stdout.reconfigure(encoding='utf-8')
     else:
         # get subtitle page
-        url = (results[0][0][1]).encode("utf-8")
+        url = (results[0][0][1])
     logger.info(f"Getting from {url}")
-    page = s.get(url).text
-    s.headers.update({"referer":url})
+    page = s.request("GET", url).data
     soup = BeautifulSoup(page, 'html5lib')
     # get download link
     return soup('a', {"class": "link1"})[0]["href"]
@@ -156,9 +159,18 @@ def get_subtitle_url(title, number, metadata, choose=False):
 
 def get_subtitle(url, path):
     temp_file = NamedTemporaryFile(delete=False)
+
     logger.info(f"downloading https://www.subdivx.com/{url}")
     
-    temp_file.write(s.get('https://www.subdivx.com/' + url).content)
+    # get direct download link
+    headers = {'cookie': 
+     s.request('GET', 'https://www.subdivx.com/' + url , redirect=False, preload_content=False).getheader('set-cookie')
+    }
+    dlink = s.request('GET', 'https://www.subdivx.com/' + url, headers=headers).geturl()
+    logger.info(f"Download link: {dlink}")
+
+    # Download file
+    temp_file.write(s.request('GET', dlink).data)
     temp_file.seek(0)
     
     if is_zipfile(temp_file.name):
@@ -180,11 +192,11 @@ def get_subtitle(url, path):
         try:
             import subprocess
             #extract all .srt in the rared file
-            
-            # For Make a .exe in Windows
+
+            #if you make a .exe in Windows
             #unrar_path = resource_path('unrar.exe')
             #ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', rar_path])
-            
+
             ret_code = subprocess.call(['unrar', 'e', '-inul', '-n*srt', '-n*txt', rar_path])
             if ret_code == 0:
                 logger.info('Unpacking rared subtitle to %s' % os.path.dirname(path))
@@ -194,7 +206,6 @@ def get_subtitle(url, path):
                         'Please, install unrar to automate this step.')
     else:
         logger.info(f"unknown file type")
-
 
     temp_file.close()
     os.unlink(temp_file.name)
