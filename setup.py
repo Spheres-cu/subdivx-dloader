@@ -15,7 +15,7 @@ setup(
     url='https://github.com/Spheres-cu/subdivx-downloader',
     packages=['subdivx',],
     license='GNU GENERAL PUBLIC LICENCE v3.0',
-    install_requires=['beautifulsoup4', 'tvnamer', 'guessit', 'rarfile', 'colorama'],
+    install_requires=['beautifulsoup4', 'tvnamer', 'guessit', 'rarfile', 'colorama', 'urllib3', 'certifi'],
     entry_points={
         'console_scripts': ['subdivx=subdivx.cli:main'],
     },
