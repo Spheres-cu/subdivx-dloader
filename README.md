@@ -33,6 +33,8 @@ pip install tvnamer
 pip install beautifulsoup4
 pip install rarfile
 pip install colorama
+pip install urllib3
+pip install certifi
 ```
 
 
