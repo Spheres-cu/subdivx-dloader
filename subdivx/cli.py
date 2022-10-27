@@ -74,14 +74,24 @@ def get_subtitle_url(title, number, metadata, choose=False):
             'POST',
             SUBDIVX_SEARCH_URL,
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"},
-            fields={'accion': 5, 'subtitulos': '1', 'realiza_b': '1', 'buscar2': buscar}
+            fields={'accion': 5, 'subtitulos': '1', 'realiza_b': '1', 'buscar2': buscar},
+            retries=False,
+            timeout=5.0
         ).data.decode('iso-8859-1')
 
     except urllib3.exceptions.NewConnectionError:
-        print("\n \033[31m [Error,", "Connection error! \033[0m", "Unable to reach https://www.subdivx.com servers!\n\n \033[0;33m Please check:\033[0m\n" + \
+        print("\n \033[31m [Error,", "Failed to establish a new connection!] \033[0m\n\n \033[0;33m Please check: \033[0m - Your Internet connection!")
+        sys.exit(1)
+
+    except urllib3.exceptions.TimeoutError:
+        print("\n \033[31m [Error,", "Connection Timeout!] \033[0m", "Unable to reach https://www.subdivx.com servers!\n\n \033[0;33m Please check:\033[0m\n" + \
                 "- Your Internet connection\n" + \
                 "- Your Firewall connections\n" + \
                 "- www.subdivx.com availability\n")
+        sys.exit(1)
+
+    except urllib3.exceptions.ProxyError:
+        print("\n \033[31m [Error,", "Cannot connect to proxy!] \033[0m\n\n \033[0;33m Please check \033[0m: - Your proxy configuration!")
         sys.exit(1)
    
     soup = BeautifulSoup(page, 'html5lib')
