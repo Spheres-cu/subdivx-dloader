@@ -11,7 +11,7 @@ import certifi
 import urllib3
 import textwrap as tr
 import logging.handlers
-from colorama import just_fix_windows_console
+from colorama import init
 from guessit import guessit
 from rarfile import is_rarfile
 from collections import namedtuple
@@ -24,7 +24,7 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
-just_fix_windows_console()
+init()
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -263,7 +263,12 @@ def get_subtitle(url, path):
         try:
             import subprocess
             #extract all .srt in the rar file
-            unrar_path = resource_path('unrar.exe')
+            
+            if os.name == 'nt' :
+                unrar_path = resource_path('unrar.exe')
+            else:
+                unrar_path = 'unrar'
+                
             ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', '-n*ass', rar_path])
             if ret_code == 0:
                 logger.info('Unpacking rar file subtitle to %s' % os.path.basename(path))
