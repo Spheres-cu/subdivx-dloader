@@ -28,15 +28,12 @@ python3 -m venv subs
 source subs/bin/activate
 then clone with git and install with all the dependencies among them:
 pip install guessit
-pip install json
 pip install tvnamer
 pip install rich
 pip install rarfile
 pip install colorama
 pip install urllib3
 pip install certifi
-pip install re
-pip install time
 ```
 
 
