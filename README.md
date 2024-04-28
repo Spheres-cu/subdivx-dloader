@@ -1,12 +1,12 @@
 A fork of kabutor fork of  Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
 Retrieve the best matching subtitle (in spanish) for a show episode from subdivx.com
 
-Working with Python 3.10.5 version 
+Working with Python 3.10.11 version 
 
 Also added these features:
 
 - Unpack rared (rar5+ file format) subtitles beside zipped and old rar version files
-- Added option (-c) to manually choose wich subtitle to download 20210221
+- Change option (-c)  now is (-nc) to not manually choose wich subtitle to download, manually download is the default
 - Change the way links are used to UTF-8 to avoid weird characters bug 20210302
 - <strike>When searching for a tvshow if the year is present it will use it also to improve search 20210321</strike> removed as 20210701
 - You can add keywords (-k) to improve the automatic selection among the subtitles available for a show. 20210405
@@ -28,13 +28,15 @@ python3 -m venv subs
 source subs/bin/activate
 then clone with git and install with all the dependencies among them:
 pip install guessit
-pip install html5lib
+pip install json
 pip install tvnamer
-pip install beautifulsoup4
+pip install rich
 pip install rarfile
 pip install colorama
 pip install urllib3
 pip install certifi
+pip install re
+pip install time
 ```
 
 
@@ -51,10 +53,11 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --quiet, -q
-  --choose, -c          show all the available subtitle and choose what to download
+  --no-choose, -nc          Download the default match subtitle avaible. Now show all the available subtitle to download is de default behavior
   --force, -f           override existing file
   --keyword -k "<string>" _ Add the <string> to the list of keywords. Keywords are used when you have 
-  10 subtitles for a show or movie,and you know in the description there is a keyword for that subtitle.
+
+10 subtitles for a show or movie,and you know in the description there is a keyword for that subtitle.
   Example if rama966 is the creator of the subtitle you want to download, add it to the keyword and the 
   script will download that one. Combine -c with -k to see how subtitles are picked. 
   --title -t "<string>" _ Set the show main title to use instead of getting it from the file name
