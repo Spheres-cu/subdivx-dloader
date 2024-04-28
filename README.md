@@ -72,4 +72,4 @@ optional arguments:
 ```
 **Now the app have a new interface, show the results in a beautiful table**
 
-!WindowsTerminal_subdivx-downloader.png
+![New design with tables !](https://github.com/Spheres-cu/subdivx-downloader/blob/master/WindowsTerminal_subdivx-downloader.png)
