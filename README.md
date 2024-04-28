@@ -6,7 +6,7 @@ Working with Python 3.10.11 version
 Also added these features:
 
 - Unpack rared (rar5+ file format) subtitles beside zipped and old rar version files
-- Change option (-c)  now is (-nc) to not manually choose wich subtitle to download, manually download is the default
+- **Change option (-c)  now is (-nc) to not manually choose wich subtitle to download, manually download is the default** 20240428
 - Change the way links are used to UTF-8 to avoid weird characters bug 20210302
 - <strike>When searching for a tvshow if the year is present it will use it also to improve search 20210321</strike> removed as 20210701
 - You can add keywords (-k) to improve the automatic selection among the subtitles available for a show. 20210405
@@ -70,3 +70,5 @@ optional arguments:
     Also can use the -t option to set the name, and then use the apostrophe escaped (\')
 
 ```
+**Now the app have a new interface, show the results in a beautiful table**
+
