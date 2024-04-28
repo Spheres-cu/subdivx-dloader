@@ -1,25 +1,30 @@
 #!/bin/env python
 
 import os
+import re
 import sys
+import json
+import time
 import logging
 import argparse
 import certifi
 import urllib3
-import urllib.parse
 import textwrap as tr
 import logging.handlers
-from colorama import init
+from colorama import just_fix_windows_console
 from guessit import guessit
-from bs4 import BeautifulSoup
 from rarfile import is_rarfile
 from collections import namedtuple
 from tvnamer.utils import FileFinder
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
+from json import JSONDecodeError
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
-init()
+just_fix_windows_console()
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -31,22 +36,31 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-PYTHONUTF8=1
+SUBDIVX_SEARCH_URL = 'https://www.subdivx.com/inc/ajax.php'
 
-SUBDIVX_SEARCH_URL = 'https://www.subdivx.com/index.php'
+SUBDIVX_DOWNLOAD_PAGE = 'https://www.subdivx.com/'
 
-SUBDIVX_DOWNLOAD_MATCHER = {'name':'a', 'rel':"nofollow", 'target': "new"}
+# Colors
+Yellow='\033[0;33m'
+BYellow='\033[1;33m'
+On_Yellow='\033[33m'
+Red='\033[0;31m'
+BRed='\033[1;31m'
+On_Green='\033[42m'
+Green='\033[0;32m'
+BGreen='\033[1;32m'
+NC='\033[0m' # No Color
 
 LOGGER_LEVEL = logging.INFO
 
-LOGGER_FORMATTER = logging.Formatter('%(asctime)-25s %(levelname)-8s %(name)-29s %(message)s', '%Y-%m-%d %H:%M:%S')
+LOGGER_FORMATTER = logging.Formatter('%(asctime)-12s %(levelname)-8s %(name)-8s %(message)s', '%Y-%m-%d %H:%M:%S')
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 s = urllib3.PoolManager(ca_certs=certifi.where())
 
-#Proxy
-#s = urllib3.ProxyManager('http://proxy:port/')
+#Proxy: You must modify this configuration depending on the Proxy you use
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
@@ -63,7 +77,7 @@ def setup_logger(level):
     logger.setLevel(level)
 
 
-def get_subtitle_url(title, number, metadata, choose=False):
+def get_subtitle_url(title, number, metadata, no_choose=True):
     #Filter the title to avoid 's in names
     title_f = [ x for x in title.split() if "\'s" not in x ]
     title = ' '.join(title_f)
@@ -74,10 +88,10 @@ def get_subtitle_url(title, number, metadata, choose=False):
             'POST',
             SUBDIVX_SEARCH_URL,
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"},
-            fields={'accion': 5, 'subtitulos': '1', 'realiza_b': '1', 'buscar2': buscar},
+            fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
             timeout=5.0
-        ).data.decode('iso-8859-1')
+        ).data
 
     except urllib3.exceptions.NewConnectionError:
         print("\n \033[31m [Error,", "Failed to establish a new connection!] \033[0m\n\n \033[0;33m Please check: \033[0m - Your Internet connection!")
@@ -93,20 +107,46 @@ def get_subtitle_url(title, number, metadata, choose=False):
     except urllib3.exceptions.ProxyError:
         print("\n \033[31m [Error,", "Cannot connect to proxy!] \033[0m\n\n \033[0;33m Please check \033[0m: - Your proxy configuration!")
         sys.exit(1)
-   
-    soup = BeautifulSoup(page, 'html5lib')
-    titles = soup('div', id='menu_detalle_buscador')
+
+    try:
+       soup = json.loads(page).get('aaData')
+    except JSONDecodeError:
+        raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
+
+    id_list = list()
+    title_list = list()
+    description_list = list()
+    download_list = list()
+    user_list = list()
+    date_list = list()
+
+    for key in soup:
+        id_list.append(key['id'])
+        title_list.append(key['titulo'])
+        description_list.append(key['descripcion'])
+        download_list.append(key['descargas'])
+        user_list.append(key['nick'])
+
+        # Format date (year-month-day)
+        match = re.search(r'(\d+-\d+-\d+)', str(key['fecha_subida']))
+        if (match is None):
+            date_list.append('-')
+        else:
+            date_list.append(match.group(1))
+
+    titles = title_list
 
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     descriptions = {
-        t.nextSibling(id='buscador_detalle_sub')[0].text: t.next('a')[0]['href'] for t in titles
-        if all(word.lower() in t.text.lower() for word in buscar.split())
+         description_list[i]: id_list[i] for i, t in enumerate(titles) 
+        if all(word.lower() in t.lower() for word in buscar.split())
     }
-    descriptions_data = {
-        t.nextSibling(id='buscador_detalle_sub_datos')[0].text: t.next('a')[0]['href'] for t in titles
-        if all(word.lower() in t.text.lower() for word in buscar.split())
+    detalles_datos = {
+         id_list[i] : [download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
+        if all(word.lower() in t.lower() for word in buscar.split())
     }
+    
     if not descriptions:
         raise NoResultsError(f'No suitable subtitles were found for: "{buscar}"')
 
@@ -118,105 +158,125 @@ def get_subtitle_url(title, number, metadata, choose=False):
         score = 0
         for keyword in metadata.keywords:
             if keyword in description:
-                score += 1
+                score += 1.5
         for quality in metadata.quality:
             if quality in description:
-                score += 1.1
+                score += 1
         for codec in metadata.codec:
             if codec in description:
                 score += .75
         scores.append(score)
 
     results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
-    results2 = sorted(zip(descriptions_data.items(), scores), key=lambda item: item[1], reverse=True)
-    # Print video infos
-    print("\n\033[33m>> Subtítulo: " + str(title) + " " + str(number).upper() + "\n\033[0m")
+    details = sorted(zip(detalles_datos.items(), scores), key=lambda item: item[1], reverse=True)
 
-    if (choose):
+    # Print video infos
+    # Construct Table for console output
+    
+    console = Console()
+    table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), title_style="bold green",show_header=True, header_style="bold yellow", show_lines=True)
+    table.add_column("#", justify="center", vertical="middle", style="bold green")
+    table.add_column("Descripción", justify="center" )
+    table.add_column("Descargas", justify="center", vertical="middle")
+    table.add_column("Usuario", justify="center", vertical="middle")
+    table.add_column("Fecha", justify="center", vertical="middle")
+
+    if (no_choose==False):
         count = 0
-        sys.stdout.reconfigure(encoding='iso-8859-1')
-        for item in (results):
-            print ("  \033[92m [%i] ===> \033[0m %s " % (count , tr.fill(str(item[0][0]), width=180)))
+        for item in (results):   
             try:
-                print("     \033[33m Detalles: \033[0m %s \r" % (tr.fill(str(results2[count][0][0]), width=180)))
+                descripcion = tr.fill(str(item[0][0]), width=77)
+                detalles = details[count][0]
+                descargas = str(detalles[1][0])
+                usuario = str(detalles[1][1])
+                fecha = str(detalles[1][2]) 
+
+                table.add_row(str(count), descripcion, descargas, usuario, fecha)
             except IndexError:
                 pass   
             count = count +1
-        print("\033[31m [" + str(count) + "] \033[0m Cancelar descarga\n")
+        console.print(table)
+        print("\n" + Red + ">> [" + str(count) + "] Cancelar descarga\n" + NC )
         res = -1
+
         while (res < 0 or res > count):
             try:
-               res = int(input (">> Elija un [#] en las opciones. Enter para la [0]: ") or "0")
+               res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow +"] para descargar el sub. Enter para la [" + BGreen + "0"+ BYellow +"]: " + NC) or "0")
             except KeyboardInterrupt:
-                print("\n\n \033[31m Interrupto por el usuario...\033[0m")
+                print(BRed + "\n\n Interrupto por el usuario..." + NC)
                 sys.exit(1)
             except:
                 res = -1
         if (res == count):
-            print("\n \033[31m Cancelando descarga...\033[0m")
+            print(BRed + "\n Cancelando descarga..." + NC)
             sys.exit(0)
-        url = (results[res][0][1])
-        sys.stdout.reconfigure(encoding='utf-8')
+        url = SUBDIVX_DOWNLOAD_PAGE + str((results[res][0][1]))
     else:
         # get subtitle page
-        url = (results[0][0][1])
-    logger.info(f"Getting from {url}")
-    page = s.request("GET", url).data
-    soup = BeautifulSoup(page, 'html5lib')
-    # get download link
-    return soup('a', {"class": "link1"})[0]["href"]
-
+        url = SUBDIVX_DOWNLOAD_PAGE + str(results[0][0][1])
+    print("\r")
+    # get download page
+    if (s.request("GET", url).status == 200):
+      logger.info(f"Getting url from: {url}")
+      return url
 
 def get_subtitle(url, path):
     temp_file = NamedTemporaryFile(delete=False)
-
-    logger.info(f"downloading https://www.subdivx.com/{url}")
     
     # get direct download link
     headers = {'cookie': 
-     s.request('GET', 'https://www.subdivx.com/' + url , redirect=False, preload_content=False).getheader('set-cookie')
+     s.request('GET', url , redirect=False, preload_content=False).headers.get('set-cookie')
     }
-    dlink = s.request('GET', 'https://www.subdivx.com/' + url, headers=headers).geturl()
-    logger.info(f"Download link: {dlink}")
-
-    # Download file
-    temp_file.write(s.request('GET', dlink).data)
-    temp_file.seek(0)
     
+    for i in range ( 9, 1, -1 ):
+
+        logger.info(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+
+        response = s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).status
+
+        if (response == 200):
+            # Download file
+            temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
+            temp_file.seek(0)
+            logger.info(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+            break
+        else:
+            time.sleep(3)
+       
+    # Decompressing files   
     if is_zipfile(temp_file.name):
         zip_file = ZipFile(temp_file)
         for name in zip_file.infolist():
             # don't unzip stub __MACOSX folders
             if '.srt' in name.filename and '__MACOSX' not in name.filename:
-                logger.info(' '.join(['Unpacking zipped subtitle', name.filename, 'to', os.path.dirname(path)]))
+                logger.info(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
                 zip_file.extract(name, os.path.dirname(path))
 
         zip_file.close()
 
     elif (is_rarfile(temp_file.name)):
         rar_path = path + '.rar'
-        logger.info('Saving rared subtitle as %s' % rar_path)
+        logger.info('Saving rar file subtitle as %s' % rar_path)
         with open(rar_path, 'wb') as out_file:
             out_file.write(temp_file.read())
 
         try:
             import subprocess
-            #extract all .srt in the rared file
-
-            #if you make a .exe in Windows
-            #unrar_path = resource_path('unrar.exe')
-            #ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', rar_path])
-
-            ret_code = subprocess.call(['unrar', 'e', '-inul', '-n*srt', '-n*txt', rar_path])
+            #extract all .srt in the rar file
+            unrar_path = resource_path('unrar.exe')
+            ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', '-n*ass', rar_path])
             if ret_code == 0:
-                logger.info('Unpacking rared subtitle to %s' % os.path.dirname(path))
+                logger.info('Unpacking rar file subtitle to %s' % os.path.basename(path))
                 os.remove(rar_path)
         except OSError:
-            logger.info('Unpacking rared subtitle failed.'
+            logger.warning('Unpacking rared subtitle failed.'
                         'Please, install unrar to automate this step.')
     else:
-        logger.info(f"unknown file type")
-
+        logger.error(f"unknown file type. Abort Downloading")
+    
+    # Cleaning
+    time.sleep(3)
+    clean_screen()
     temp_file.close()
     os.unlink(temp_file.name)
 
@@ -273,13 +333,21 @@ _keywords = (
     'sparks',
     'turbo',
     'torrentgalaxy',
-    ''
+    'AMZN',
+    'PSA',
+    'NF',
+    'RBB',
+    'PCOK',
+    'EDITH'
 )
 
-_codecs = ('xvid', 'x264', 'h264', 'x265')
+_codecs = ('xvid', 'x264', 'h264', 'x265', 'HEVC')
 
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
+
+def clean_screen():
+    os.system('clear' if os.name != 'nt' else 'cls')
 
 def extract_meta_data(filename, kword):
     f = filename.lower()[:-4]
@@ -332,9 +400,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str,
                         help="file or directory to retrieve subtitles")
-    parser.add_argument('--quiet', '-q', action='store_true')
-    parser.add_argument('--choose', '-c', action='store_true',
-                        default=False, help="Choose sub manually")
+    parser.add_argument('--quiet', '-q', action='store_true',
+                        default=False, help="No verbose mode")
+    parser.add_argument('--no-choose', '-nc', action='store_true',
+                        default=False, help="No Choose sub manually")
     parser.add_argument('--force', '-f', action='store_true',
                         default=False, help="override existing file")
     parser.add_argument('--keyword','-k',type=str,help="Add keyword to search among subtitles")
@@ -347,8 +416,12 @@ def main():
         console.setFormatter(LOGGER_FORMATTER)
         logger.addHandler(console)
 
-    cursor = FileFinder(args.path, with_extension=_extensions)
-
+    if os.path.exists(args.path):
+      cursor = FileFinder(args.path, with_extension=_extensions)
+    else:
+        logger.error(f'No file or folder were found for: "{args.path}"')
+        sys.exit(1)
+    
     for filepath in cursor.findFiles():
         # skip if a subtitle for this file exists
         sub_file = os.path.splitext(filepath)[0] + '.srt'
@@ -356,6 +429,7 @@ def main():
             if args.force:
                 os.remove(sub_file)
             else:
+                logger.info(f'Subtitle already exits use -f for force downloading')
                 continue
 
         filename = os.path.basename(filepath)
@@ -373,7 +447,7 @@ def main():
             url = get_subtitle_url(
                 title, number,
                 metadata,
-                args.choose)
+                args.no_choose)
         except NoResultsError as e:
             logger.error(str(e))
             url=''
