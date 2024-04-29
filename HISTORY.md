@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.0 (2024-04-28)
+---------------
+- Modified cli.py, now allows you to obtain information about series and movies from the new design and format of sudivx.
+
+- The rich module has been added to display the results in a table for better visibility.
+
+- The -c (choose) argument has been modified to -nc (no-choose), now with this the option to display the results is by default unless -nc is passed and the first search result is obtained.
+- Some bugs have been fixed
+
 0.9 (2021-11-15)
 ---------------
 - Redited cli.py, now you no longer need lib.py, all necessary modules and dependencies are in cli.py
