@@ -17,7 +17,8 @@ Install
 -------
 ```
 $ git clone https://github.com/Spheres-cu/subdivx-downloader
-python3 setup.py install
+cd subdivx-downloader
+pip install .
 ```
 
 My recomendation is to use a virtual env and install it there:
