@@ -303,7 +303,7 @@ _extensions = [
 ]
 
 #obtained from http://flexget.com/wiki/Plugins/quality
-_qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
+_qualities = ('1080i', '1080p', '1080p1080', '10bit', '1280x720',
               '1920x1080', '360p', '368p', '480', '480p', '576p',
                '720i', '720p', 'bdrip', 'brrip', 'bdscr', 'bluray',
                'blurayrip', 'cam', 'dl', 'dsrdsrip', 'dvb', 'dvdrip',

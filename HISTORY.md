@@ -1,6 +1,10 @@
 Changelog
 =========
+1.1 (2024-04-29)
+- Fixed error when the filename hasn't episode number
+- Fixed search movies with years without parenthesis
 
+---------------
 1.0 (2024-04-28)
 ---------------
 - Modified cli.py, now allows you to obtain information about series and movies from the new design and format of sudivx.
