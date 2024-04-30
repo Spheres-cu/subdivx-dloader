@@ -57,10 +57,10 @@ LOGGER_FORMATTER = logging.Formatter('%(asctime)-12s %(levelname)-8s %(name)-8s 
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-#s = urllib3.PoolManager(ca_certs=certifi.where())
+s = urllib3.PoolManager(ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-s = urllib3.ProxyManager('http://10.8.6.50:3128/', ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
