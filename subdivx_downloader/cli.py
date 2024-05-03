@@ -463,7 +463,11 @@ def main():
             if (args.title):
                 title=args.title
             else:
-                title = info["title"]
+                if info["type"] == "movie" :
+                  title = info["title"] 
+                else:
+                    title=f"{info['title']} ({info['year']})" if "year" in info  else info['title']
+            
             url = get_subtitle_url(
                 title, number,
                 metadata,
