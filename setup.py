@@ -17,7 +17,7 @@ setup(
     license='GNU GENERAL PUBLIC LICENCE v3.0',
     install_requires=['tvnamer', 'guessit', 'rarfile', 'colorama', 'urllib3', 'certifi', 'rich'],
     entry_points={
-        'console_scripts': ['subdivx_dloader=subdivx_dloader.cli:main'],
+        'console_scripts': ['subdivx-dloader=subdivx_dloader.cli:main'],
     },
     classifiers=[
         'Development Status :: 1.2',

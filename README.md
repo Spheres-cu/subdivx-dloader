@@ -17,10 +17,14 @@ Install
 -------
 ```
 $ git clone https://github.com/Spheres-cu/subdivx-dloader.git
-cd subdivx-downloader
+cd subdivx-dloader
+python3 -m pip install .
+ 
+ OR
+
 pip install build
 python3 -m build
-python3 -m pip install ./dist/subdivx-dloader-<version>
+python3 -m pip install ./dist/subdivx_dloader-<version>
 
 ```
 

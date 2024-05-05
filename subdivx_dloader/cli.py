@@ -60,7 +60,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 s = urllib3.PoolManager(ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.01:3128/', ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
