@@ -20,7 +20,7 @@ setup(
         'console_scripts': ['subdivx_dloader=subdivx_dloader.cli:main'],
     },
     classifiers=[
-        'Development Status :: 1.1',
+        'Development Status :: 1.2',
         'Environment :: Console',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: GNU General Public License (GPL)',
