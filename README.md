@@ -75,6 +75,6 @@ optional arguments:
     Also can use the -t option to set the name, and then use the apostrophe escaped (\')
 
 ```
-**Now the app have a new interface, show the results in a beautiful table**
+**The show the results in a beautiful table**
 
-![New design with tables !]()
+![Design with tables !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture03.png)
