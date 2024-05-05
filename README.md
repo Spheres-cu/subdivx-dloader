@@ -16,9 +16,12 @@ Also added these features:
 Install
 -------
 ```
-$ git clone https://github.com/Spheres-cu/subdivx-downloader
+$ git clone https://github.com/Spheres-cu/subdivx-dloader.git
 cd subdivx-downloader
-pip install .
+pip install build
+python3 -m build
+python3 -m pip install ./dist/subdivx-dloader-<version>
+
 ```
 
 My recomendation is to use a virtual env and install it there:
@@ -70,4 +73,4 @@ optional arguments:
 ```
 **Now the app have a new interface, show the results in a beautiful table**
 
-![New design with tables !](https://github.com/Spheres-cu/subdivx-downloader/blob/master/WindowsTerminal_subdivx-downloader.png)
+![New design with tables !]()

@@ -5,19 +5,19 @@ from setuptools import setup
 long_description = open('README.md').read() + '\n' + open('HISTORY.md').read()
 
 setup(
-    name='subdivx-downloader',
-    version='1.1',
+    name='subdivx-dloader',
+    version='1.2',
     description='A command line tool to download the best matching subtitle from subdivx.com',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author=u"Spheres-cu",
     author_email='Spheres-cu@gmail.com',
-    url='https://github.com/Spheres-cu/subdivx-downloader',
-    packages=['subdivx_downloader',],
+    url='https://github.com/Spheres-cu/subdivx-dloader',
+    packages=['subdivx_dloader',],
     license='GNU GENERAL PUBLIC LICENCE v3.0',
     install_requires=['tvnamer', 'guessit', 'rarfile', 'colorama', 'urllib3', 'certifi', 'rich'],
     entry_points={
-        'console_scripts': ['subdivx-downloader=subdivx_downloader.cli:main'],
+        'console_scripts': ['subdivx_dloader=subdivx_dloader.cli:main'],
     },
     classifiers=[
         'Development Status :: 1.1',
