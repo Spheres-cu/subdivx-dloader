@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.3 (2024-05-05)
+---------------
+- Fixed download subtitle no getting old server url
+- Added file log
+- Some cosmetic changes
+
 1.2 (2024-05-01)
 ---------------
 Fixed search subtitles with year in the title

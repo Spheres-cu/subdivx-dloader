@@ -1,10 +1,11 @@
 A fork of kabutor fork of  Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
 Retrieve the best matching subtitle (in spanish) for a show episode from subdivx.com
 
-Working with Python 3.10.11 version 
+Bumb! Working with Python 3.12 version 
 
 Also added these features:
 
+- Added logfile 20240505
 - Unpack rared (rar5+ file format) subtitles beside zipped and old rar version files
 - **Change option (-c)  now is (-nc) to not manually choose wich subtitle to download, manually download is the default** 20240428
 - Change the way links are used to UTF-8 to avoid weird characters bug 20210302

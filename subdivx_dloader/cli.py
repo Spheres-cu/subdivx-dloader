@@ -9,6 +9,7 @@ import logging
 import argparse
 import certifi
 import urllib3
+import tempfile
 import textwrap as tr
 import logging.handlers
 from colorama import init
@@ -53,14 +54,19 @@ NC='\033[0m' # No Color
 
 LOGGER_LEVEL = logging.INFO
 
-LOGGER_FORMATTER = logging.Formatter('%(asctime)-12s %(levelname)-8s %(name)-8s %(message)s', '%Y-%m-%d %H:%M:%S')
+LOGGER_FORMATTER = logging.Formatter('%(asctime)-12s %(levelname)-6s %(message)s', '%Y-%m-%d %H:%M:%S')
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+temp_log_dir = tempfile.gettempdir()
+file_log = os.path.join(temp_log_dir, 'subdivx-dloader.log')
+
+logging.basicConfig(filename=file_log, filemode='w', encoding='utf-8', level=logging.DEBUG, format='[%(asctime)s] |%(levelname)s| %(message)s')
 
 s = urllib3.PoolManager(ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.01:3128/', ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
@@ -103,19 +109,20 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         ).data
 
     except urllib3.exceptions.NewConnectionError:
-        print("\n \033[31m [Error,", "Failed to establish a new connection!] \033[0m\n\n \033[0;33m Please check: \033[0m - Your Internet connection!")
+        print("\n"  + Red + "[Error,", "Failed to establish a new connection!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "- Your Internet connection!")
         sys.exit(1)
 
     except urllib3.exceptions.TimeoutError:
-        print("\n \033[31m [Error,", "Connection Timeout!] \033[0m", "Unable to reach https://www.subdivx.com servers!\n\n \033[0;33m Please check:\033[0m\n" + \
+        print("\n"  + Red + "[Error,", "Connection Timeout!]: " + NC + Yellow + "Unable to reach https://www.subdivx.com servers!" + NC + "\n\n" + Yellow + " Please check: " + NC + "\n" + \
                 "- Your Internet connection\n" + \
                 "- Your Firewall connections\n" + \
                 "- www.subdivx.com availability\n")
         sys.exit(1)
 
     except urllib3.exceptions.ProxyError:
-        print("\n \033[31m [Error,", "Cannot connect to proxy!] \033[0m\n\n \033[0;33m Please check \033[0m: - Your proxy configuration!")
+        print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
         sys.exit(1)
+
 
     try:
        soup = json.loads(page).get('aaData')
@@ -232,7 +239,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 def get_subtitle(url, path):
     """Download subtitles from ``url`` to a destination ``path``"""
     temp_file = NamedTemporaryFile(delete=False)
-    
+    temp_dl_file = NamedTemporaryFile(delete=False)
+    SUCCESS = False
     # get direct download link
     headers = {'cookie': 
      s.request('GET', url , redirect=False, preload_content=False).headers.get('set-cookie')
@@ -240,29 +248,40 @@ def get_subtitle(url, path):
     
     for i in range ( 9, 1, -1 ):
 
-        logger.info(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+        logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+        
+        # Download file
+        temp_dl_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
+        temp_dl_file.seek(0)
 
-        response = s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).status
-
-        if (response == 200):
-            # Download file
+        # Check file if is zip or rar and download
+        if is_zipfile(temp_dl_file.name) or is_rarfile(temp_dl_file.name):
+            SUCCESS = True
             temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
             temp_file.seek(0)
-            logger.info(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+            logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
             break
         else:
-            time.sleep(3)
-       
+            SUCCESS = False
+            time.sleep(2)
+
+    temp_dl_file.close()
+    os.unlink(temp_dl_file.name)
+    
+    if not SUCCESS :
+        raise NoResultsError(f'No suitable subtitles download for : "{url}"')
+
     # Decompressing files   
     if is_zipfile(temp_file.name):
         zip_file = ZipFile(temp_file)
         for name in zip_file.infolist():
             # don't unzip stub __MACOSX folders
             if '.srt' in name.filename and '__MACOSX' not in name.filename:
-                logger.info(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
+                logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
                 zip_file.extract(name, os.path.dirname(path))
 
         zip_file.close()
+        logger.info(f"Done download subtitle!")
 
     elif (is_rarfile(temp_file.name)):
         rar_path = path + '.rar'
@@ -275,7 +294,7 @@ def get_subtitle(url, path):
             #extract all .srt in the rar file
             
             if os.name == 'nt' :
-                unrar_path = resource_path('unrar.exe')
+                unrar_path = 'unrar.exe'
             else:
                 unrar_path = 'unrar'
                 
@@ -283,6 +302,8 @@ def get_subtitle(url, path):
             if ret_code == 0:
                 logger.info('Unpacking rar file subtitle to %s' % os.path.basename(path))
                 os.remove(rar_path)
+                logger.info(f"Done download subtitle!")
+
         except OSError:
             logger.warning('Unpacking rared subtitle failed.'
                         'Please, install unrar to automate this step.')
@@ -291,9 +312,9 @@ def get_subtitle(url, path):
     
     # Cleaning
     time.sleep(3)
-    clean_screen()
     temp_file.close()
     os.unlink(temp_file.name)
+    #clean_screen()
 
 _extensions = [
     'avi', 'mkv', 'mp4',
@@ -432,6 +453,10 @@ def main():
         console = logging.StreamHandler()
         console.setFormatter(LOGGER_FORMATTER)
         logger.addHandler(console)
+    else:
+        logfile = logging.FileHandler(file_log)
+        logfile.setLevel(logging.DEBUG)
+        logger.addHandler(logfile)
 
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
