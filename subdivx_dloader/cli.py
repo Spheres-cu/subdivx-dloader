@@ -52,17 +52,6 @@ Green='\033[0;32m'
 BGreen='\033[1;32m'
 NC='\033[0m' # No Color
 
-LOGGER_LEVEL = logging.INFO
-
-LOGGER_FORMATTER = logging.Formatter('%(asctime)-12s %(levelname)-6s %(message)s', '%Y-%m-%d %H:%M:%S')
-
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-
-temp_log_dir = tempfile.gettempdir()
-file_log = os.path.join(temp_log_dir, 'subdivx-dloader.log')
-
-logging.basicConfig(filename=file_log, filemode='w', encoding='utf-8', level=logging.DEBUG, format='[%(asctime)s] |%(levelname)s| %(message)s')
-
 s = urllib3.PoolManager(ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
@@ -71,10 +60,18 @@ s = urllib3.PoolManager(ca_certs=certifi.where())
 class NoResultsError(Exception):
     pass
 
+# Setting Loggers
+LOGGER_LEVEL = logging.DEBUG
+LOGGER_FORMATTER_LONG = logging.Formatter('%(asctime)-12s %(levelname)-6s %(message)s', '%Y-%m-%d %H:%M:%S')
+LOGGER_FORMATTER_SHORT = logging.Formatter('| %(levelname)s | %(message)s')
+
+temp_log_dir = tempfile.gettempdir()
+file_log = os.path.join(temp_log_dir, 'subdivx-dloader.log')
+
 def setup_logger(level):
     global logger
 
-    logger = logging.getLogger()
+    logger = logging.getLogger(__name__)
     """
     logfile = logging.handlers.RotatingFileHandler(logger.name+'.log', maxBytes=1000 * 1024, backupCount=9)
     logfile.setFormatter(LOGGER_FORMATTER)
@@ -122,7 +119,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     except urllib3.exceptions.ProxyError:
         print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
         sys.exit(1)
-
 
     try:
        soup = json.loads(page).get('aaData')
@@ -173,13 +169,13 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
         score = 0
         for keyword in metadata.keywords:
-            if keyword in description:
+            if keyword.lower() in description[0][0].lower():
                 score += 1.5
         for quality in metadata.quality:
-            if quality in description:
+            if quality.lower() in description[0][0].lower():
                 score += 1
         for codec in metadata.codec:
-            if codec in description:
+            if codec.lower() in description[0][0].lower():
                 score += .75
         scores.append(score)
 
@@ -219,12 +215,18 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             try:
                res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow +"] para descargar el sub. Enter para la [" + BGreen + "0"+ BYellow +"]: " + NC) or "0")
             except KeyboardInterrupt:
+                logger.debug('Interrupted by user')
                 print(BRed + "\n\n Interrupto por el usuario..." + NC)
+                time.sleep(3)
+                clean_screen()
                 sys.exit(1)
             except:
                 res = -1
         if (res == count):
+            logger.debug('Download Canceled')
             print(BRed + "\n Cancelando descarga..." + NC)
+            time.sleep(3)
+            clean_screen()
             sys.exit(0)
         url = SUBDIVX_DOWNLOAD_PAGE + str((results[res][0][1]))
     else:
@@ -239,7 +241,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 def get_subtitle(url, path):
     """Download subtitles from ``url`` to a destination ``path``"""
     temp_file = NamedTemporaryFile(delete=False)
-    temp_dl_file = NamedTemporaryFile(delete=False)
     SUCCESS = False
     # get direct download link
     headers = {'cookie': 
@@ -251,70 +252,68 @@ def get_subtitle(url, path):
         logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
         
         # Download file
-        temp_dl_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
-        temp_dl_file.seek(0)
+        temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
+        temp_file.seek(0)
 
-        # Check file if is zip or rar and download
-        if is_zipfile(temp_dl_file.name) or is_rarfile(temp_dl_file.name):
+        # Checking if the file is zip or rar then decompress
+        if is_zipfile(temp_file.name):
             SUCCESS = True
-            temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
-            temp_file.seek(0)
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+            logger.info('Decompressing files') 
+
+            zip_file = ZipFile(temp_file)
+            for name in zip_file.infolist():
+                # don't unzip stub __MACOSX folders
+                if '.srt' in name.filename and '__MACOSX' not in name.filename:
+                    logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
+                    zip_file.extract(name, os.path.dirname(path))
+
+            zip_file.close()
+            logger.info(f"Done download subtitle!")
+
+            break
+
+        elif (is_rarfile(temp_file.name)):
+            SUCCESS = True
+            logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+            logger.info('Decompressing files') 
+
+            rar_path = path + '.rar'
+            logger.debug('Saving rar file subtitle as %s' % rar_path)
+            with open(rar_path, 'wb') as out_file:
+                out_file.write(temp_file.read())
+
+            try:
+                import subprocess
+                #extract all .srt in the rar file
+                
+                if os.name == 'nt' :
+                    unrar_path = 'unrar.exe'
+                else:
+                    unrar_path = 'unrar'
+                    
+                ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', '-n*ass', rar_path])
+                if ret_code == 0:
+                    logger.debug('Unpacking rar file subtitle to %s' % os.path.basename(path))
+                    os.remove(rar_path)
+                    logger.info(f"Done download subtitle!")
+
+            except OSError:
+                logger.warning('Unpacking rared subtitle failed.'
+                            'Please, install unrar to automate this step.')
             break
         else:
             SUCCESS = False
             time.sleep(2)
-
-    temp_dl_file.close()
-    os.unlink(temp_dl_file.name)
     
     if not SUCCESS :
         raise NoResultsError(f'No suitable subtitles download for : "{url}"')
-
-    # Decompressing files   
-    if is_zipfile(temp_file.name):
-        zip_file = ZipFile(temp_file)
-        for name in zip_file.infolist():
-            # don't unzip stub __MACOSX folders
-            if '.srt' in name.filename and '__MACOSX' not in name.filename:
-                logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
-                zip_file.extract(name, os.path.dirname(path))
-
-        zip_file.close()
-        logger.info(f"Done download subtitle!")
-
-    elif (is_rarfile(temp_file.name)):
-        rar_path = path + '.rar'
-        logger.info('Saving rar file subtitle as %s' % rar_path)
-        with open(rar_path, 'wb') as out_file:
-            out_file.write(temp_file.read())
-
-        try:
-            import subprocess
-            #extract all .srt in the rar file
-            
-            if os.name == 'nt' :
-                unrar_path = 'unrar.exe'
-            else:
-                unrar_path = 'unrar'
-                
-            ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', '-n*ass', rar_path])
-            if ret_code == 0:
-                logger.info('Unpacking rar file subtitle to %s' % os.path.basename(path))
-                os.remove(rar_path)
-                logger.info(f"Done download subtitle!")
-
-        except OSError:
-            logger.warning('Unpacking rared subtitle failed.'
-                        'Please, install unrar to automate this step.')
-    else:
-        logger.error(f"unknown file type. Abort Downloading")
-    
+   
     # Cleaning
     time.sleep(3)
     temp_file.close()
     os.unlink(temp_file.name)
-    #clean_screen()
+    clean_screen()
 
 _extensions = [
     'avi', 'mkv', 'mp4',
@@ -447,16 +446,19 @@ def main():
     parser.add_argument('--keyword','-k',type=str,help="Add keyword to search among subtitles")
     parser.add_argument('--title','-t',type=str,help="Set the title of the show")
     args = parser.parse_args()
+
     setup_logger(LOGGER_LEVEL)
+
+    logfile = logging.FileHandler(file_log, mode='w', encoding='utf-8')
+    logfile.setFormatter(LOGGER_FORMATTER_LONG)
+    logfile.setLevel(logging.DEBUG)
+    logger.addHandler(logfile)
 
     if not args.quiet:
         console = logging.StreamHandler()
-        console.setFormatter(LOGGER_FORMATTER)
+        console.setFormatter(LOGGER_FORMATTER_SHORT)
+        console.setLevel(logging.INFO)
         logger.addHandler(console)
-    else:
-        logfile = logging.FileHandler(file_log)
-        logfile.setLevel(logging.DEBUG)
-        logger.addHandler(logfile)
 
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
