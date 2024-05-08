@@ -14,7 +14,7 @@ import textwrap as tr
 import logging.handlers
 from colorama import init
 from guessit import guessit
-from rarfile import is_rarfile
+from rarfile import is_rarfile, RarFile
 from collections import namedtuple
 from tvnamer.utils import FileFinder
 from contextlib import contextmanager
@@ -323,6 +323,8 @@ def get_subtitle(url, path):
             logger.info('Decompressing files')
             rar_file = RarFile(temp_file)
             # Check for existence of various subtitles
+            ### TODO: ###
+            # -Extract files without folder with '-e' parameter
             if len(rar_file.infolist()) > 1:
                 clean_screen()
                 console = Console()
