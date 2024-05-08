@@ -86,4 +86,4 @@ optional arguments:
 
 **Now  you can select wich subtitle download !**
 
-![Selective subtitle Download !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture04.gif)
+![Select subtitle file to Download !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture04.gif)
