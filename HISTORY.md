@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.4 (2024-05-08)
+---------------
+Several change made to cli:
+- Now you can select which subtitle download inside a zip o rar file.
+- Also you can download all subtitles at once.
+- You can download a complete season if you name one episode with the show + season : Young.Sheldon.S01.mkv
+- The Logging config a has been updated.
+
 1.3 (2024-05-05)
 ---------------
 - Fixed download subtitle no getting old server url
