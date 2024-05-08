@@ -94,7 +94,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     title_f = [ x for x in title.split() if "\'s" not in x ]
     title = ' '.join(title_f)
     buscar = f"{title} {number}"
-
+    print("\r")
+    logger.info(f'Searching subtitles for: "{buscar.lower()}"')
     try:
         page = s.request(
             'POST',
@@ -259,48 +260,119 @@ def get_subtitle(url, path):
         if is_zipfile(temp_file.name):
             SUCCESS = True
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
-            logger.info('Decompressing files') 
 
             zip_file = ZipFile(temp_file)
-            for name in zip_file.infolist():
-                # don't unzip stub __MACOSX folders
-                if '.srt' in name.filename and '__MACOSX' not in name.filename:
-                    logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
-                    zip_file.extract(name, os.path.dirname(path))
+            # In case of existence of various subtitles choice vich download
+            if len(zip_file.infolist()) > 1 :
+                clean_screen()
+                console = Console()
+                count = 0
+                list_sub = []
+                table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
+                              header_style="bold yellow", show_lines=True, title_justify='center')
+                table.add_column("#", justify="center", vertical="middle", style="bold green")
+                table.add_column("Subtítulo", justify="center" , no_wrap=True)
+                for i in zip_file.infolist():
+                    list_sub.append(i.filename)
+                    table.add_row(str(count), str(i.filename))
+                    count += 1
+                console.print(table)
+                print("\n" + BGreen + ">> [" + str(count) + "] Descargar todos" + NC )
+                print("\n" + Red + ">> [" + str(count+1) + "] Cancelar descarga\n" + NC )
+                res = -1
+                while (res < 0 or res > count + 1):
+                    try:
+                       res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow + "]: " + NC) or "0")
+                    except:
+                        res = -1
+                if (res == count + 1):
+                    logger.debug('Canceled Download Subtitle')
+                    print(BRed + "\n Cancelando descarga..." + NC)
+                    temp_file.close()
+                    os.unlink(temp_file.name)
+                    time.sleep(3)
+                    clean_screen()
+                    sys.exit(0)
+                logger.info('Decompressing files')
+                if res == count:
+                    for sub in list_sub:
+                        logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.basename(path)]))
+                        zip_file.extract(sub, os.path.dirname(path))
+                    zip_file.close
+                else:
+                    if '.srt' in list_sub[res] and '__MACOSX' not in list_sub[res]:
+                        logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.basename(path)]))
+                        zip_file.extract(list_sub[res], os.path.dirname(path))
+                    zip_file.close()
+                logger.info(f"Done extract subtitles!")
+            else:
+                for name in zip_file.infolist():
+                    # don't unzip stub __MACOSX folders
+                    if '.srt' in name.filename and '__MACOSX' not in name.filename:
+                        logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
+                        zip_file.extract(name, os.path.dirname(path))
 
-            zip_file.close()
-            logger.info(f"Done download subtitle!")
+                zip_file.close()
+                logger.info(f"Done extract subtitle!")
 
             break
 
         elif (is_rarfile(temp_file.name)):
             SUCCESS = True
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
-            logger.info('Decompressing files') 
-
-            rar_path = path + '.rar'
-            logger.debug('Saving rar file subtitle as %s' % rar_path)
-            with open(rar_path, 'wb') as out_file:
-                out_file.write(temp_file.read())
-
-            try:
-                import subprocess
-                #extract all .srt in the rar file
-                
-                if os.name == 'nt' :
-                    unrar_path = 'unrar.exe'
+            logger.info('Decompressing files')
+            rar_file = RarFile(temp_file)
+            # Check for existence of various subtitles
+            if len(rar_file.infolist()) > 1:
+                clean_screen()
+                console = Console()
+                count = 0
+                list_sub = []
+                table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
+                              header_style="bold yellow", show_lines=True, title_justify='center')
+                table.add_column("#", justify="center", vertical="middle", style="bold green")
+                table.add_column("Subtítulo", justify="center" , no_wrap=True)
+                for i in rar_file.namelist():
+                    list_sub.append(i)
+                    table.add_row(str(count), i)
+                    count += 1
+                console.print(table)
+                print("\n" + BGreen + ">> [" + str(count) + "] Descargar todos" + NC )
+                print("\n" + Red + ">> [" + str(count+1) + "] Cancelar descarga\n" + NC )
+                res = -1
+                while (res < 0 or res > count + 1):
+                    try:
+                       res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow + "]: " + NC) or "0")
+                    except:
+                        res = -1
+                if (res == count + 1):
+                    logger.debug('Canceled Download Subtitle')
+                    print(BRed + "\n Cancelando descarga..." + NC)
+                    temp_file.close()
+                    os.unlink(temp_file.name)
+                    time.sleep(3)
+                    clean_screen()
+                    sys.exit(0)
+                logger.info('Decompressing files')
+                if res == count:
+                    for sub in list_sub:
+                        logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.basename(path)]))
+                        rar_file.extract(sub, os.path.dirname(path))
+                    rar_file.close()
+                    logger.info(f"Done extract subtitles!")
                 else:
-                    unrar_path = 'unrar'
-                    
-                ret_code = subprocess.call([unrar_path, 'e', '-inul', '-n*srt', '-n*txt', '-n*ass', rar_path])
-                if ret_code == 0:
-                    logger.debug('Unpacking rar file subtitle to %s' % os.path.basename(path))
-                    os.remove(rar_path)
-                    logger.info(f"Done download subtitle!")
-
-            except OSError:
-                logger.warning('Unpacking rared subtitle failed.'
-                            'Please, install unrar to automate this step.')
+                    if '.srt' in list_sub[res] and '__MACOSX' not in list_sub[res]:
+                        logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.basename(path)]))
+                        rar_file.extract(list_sub[res], os.path.dirname(path))
+                        rar_file.close()
+                        logger.info(f"Done extract subtitle!")
+            else:
+                for name in rar_file.namelist():
+                    if '.srt' in name and '__MACOSX' not in name:
+                        logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.basename(path)]))
+                        rar_file.extract(name, os.path.dirname(path))
+                rar_file.close()
+                logger.info(f"Done extract subtitle!")
             break
         else:
             SUCCESS = False
@@ -314,7 +386,7 @@ def get_subtitle(url, path):
    
     # Cleaning
     time.sleep(3)
-    clean_screen()
+    #clean_screen()
 
 _extensions = [
     'avi', 'mkv', 'mp4',
@@ -332,50 +404,11 @@ _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
                'preair', 'r5', 'rc', 'sdtvpdtv', 'tc', 'tvrip',
                'web', 'web-dl', 'web-dlwebdl', 'webrip', 'workprint')
 _keywords = (
-    '2hd',
-    'adrenaline',
-    'amnz',
-    'asap',
-    'axxo',
-    'compulsion',
-    'crimson',
-    'ctrlhd',
-    'ctrlhd',
-    'ctu',
-    'dimension',
-    'ebp',
-    'ettv',
-    'eztv',
-    'fanta',
-    'fov',
-    'fqm',
-    'ftv',
-    'galaxyrg',
-    'galaxytv',
-    'hazmatt',
-    'immerse',
-    'internal',
-    'ion10',
-    'killers',
-    'loki',
-    'lol',
-    'mement',
-    'minx',
-    'notv',
-    'phoenix',
-    'rarbg',
-    'sfm',
-    'sva',
-    'sparks',
-    'turbo',
-    'torrentgalaxy',
-    'AMZN',
-    'PSA',
-    'NF',
-    'RBB',
-    'PCOK',
-    'EDITH'
-)
+'2hd', 'adrenaline', 'amnz', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
+'ctrlhd', 'ctu', 'dimension', 'ebp', 'ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
+'galaxyrg', 'galaxytv', 'hazmatt', 'immerse', 'internal', 'ion10', 'killers', 'loki', 
+'lol', 'mement', 'minx', 'notv', 'phoenix', 'rarbg', 'sfm', 'sva', 'sparks', 'turbo', 
+'torrentgalaxy', 'AMZN', 'PSA', 'NF', 'RBB', 'PCOK', 'EDITH')
 
 _codecs = ('xvid', 'x264', 'h264', 'x265', 'HEVC')
 
