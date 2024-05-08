@@ -306,13 +306,14 @@ def get_subtitle(url, path):
             SUCCESS = False
             time.sleep(2)
     
+    temp_file.close()
+    os.unlink(temp_file.name)
+    
     if not SUCCESS :
         raise NoResultsError(f'No suitable subtitles download for : "{url}"')
    
     # Cleaning
     time.sleep(3)
-    temp_file.close()
-    os.unlink(temp_file.name)
     clean_screen()
 
 _extensions = [
