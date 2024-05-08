@@ -5,6 +5,10 @@ Bumb! Working with Python 3.12 version
 
 Also added these features:
 
+ (20240508)
+- Ability to select which subtitle download inside zip or rar file or download them All!
+- Now a logfile is generate with info and debug.
+
 - Added logfile 20240505
 - Unpack rared (rar5+ file format) subtitles beside zipped and old rar version files
 - **Change option (-c)  now is (-nc) to not manually choose wich subtitle to download, manually download is the default** 20240428
@@ -79,3 +83,7 @@ optional arguments:
 **The results is show in a beautiful table**
 
 ![Design with tables !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture03.png)
+
+**Now  you can select wich subtitle download !**
+
+![Selective subtitle Download !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture04.gif)
