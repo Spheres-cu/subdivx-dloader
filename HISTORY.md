@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.4.1 (2024-05-09)
+---------------
+- Fixed error for rename various subtitles with same filename.
+
 1.4 (2024-05-08)
 ---------------
 Several change made to cli:
