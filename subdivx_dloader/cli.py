@@ -95,7 +95,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     title = ' '.join(title_f)
     buscar = f"{title} {number}"
     print("\r")
-    logger.info(f'Searching subtitles for: "{buscar.lower()}"')
+    logger.info(f'Searching subtitles for: "{buscar}"')
     try:
         page = s.request(
             'POST',
