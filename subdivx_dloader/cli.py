@@ -95,7 +95,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     title = ' '.join(title_f)
     buscar = f"{title} {number}"
     print("\r")
-    logger.info(f'Searching subtitles for: "{buscar}"')
+    logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     try:
         page = s.request(
             'POST',
@@ -171,13 +171,13 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         score = 0
         for keyword in metadata.keywords:
             if keyword.lower() in description[0][0].lower():
-                score += 1.5
+                score += 1
         for quality in metadata.quality:
             if quality.lower() in description[0][0].lower():
-                score += 1
+                score += .5
         for codec in metadata.codec:
             if codec.lower() in description[0][0].lower():
-                score += .75
+                score += .25
         scores.append(score)
 
     results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
@@ -196,9 +196,9 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     if (no_choose==False):
         count = 0
-        for item in (results):   
+        for item in (results):
             try:
-                descripcion = tr.fill(str(item[0][0]), width=77)
+                descripcion = tr.fill(highlight_text(item[0][0], metadata), width=77)
                 detalles = details[count][0]
                 descargas = str(detalles[1][0])
                 usuario = str(detalles[1][1])
@@ -227,7 +227,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             logger.debug('Download Canceled')
             print(BRed + "\n Cancelando descarga..." + NC)
             time.sleep(3)
-            clean_screen()
+            #clean_screen()
             sys.exit(0)
         url = SUBDIVX_DOWNLOAD_PAGE + str((results[res][0][1]))
     else:
@@ -353,7 +353,7 @@ def get_subtitle(url, path):
                     temp_file.close()
                     os.unlink(temp_file.name)
                     time.sleep(3)
-                    clean_screen()
+                    #clean_screen()
                     sys.exit(0)
                 logger.info('Decompressing files')
                 if res == count:
@@ -410,15 +410,39 @@ _keywords = (
 'ctrlhd', 'ctu', 'dimension', 'ebp', 'ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
 'galaxyrg', 'galaxytv', 'hazmatt', 'immerse', 'internal', 'ion10', 'killers', 'loki', 
 'lol', 'mement', 'minx', 'notv', 'phoenix', 'rarbg', 'sfm', 'sva', 'sparks', 'turbo', 
-'torrentgalaxy', 'AMZN', 'PSA', 'NF', 'RBB', 'PCOK', 'EDITH')
+'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta')
 
-_codecs = ('xvid', 'x264', 'h264', 'x265', 'HEVC')
+_codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
 def clean_screen():
     os.system('clear' if os.name != 'nt' else 'cls')
+
+def highlight_text(text,  metadata):
+    """Highlight all text  matches  metadata of the file"""
+    highlighted = f"{text}"
+    #highlighted = str()
+    for keyword in metadata.keywords:
+        if keyword.lower() in text.lower():
+            Match_keyword = re.search(keyword, text, re.IGNORECASE).group(0)
+            highlighted = highlighted.replace(f'{Match_keyword}', f'{"[white on green4]" + Match_keyword + "[default on default]"}')
+            logger.debug(f'Highlighted keywords: {Match_keyword}')
+
+    for quality in metadata.quality:
+        if quality.lower() in text.lower():
+            Match_quality = re.search(quality, text, re.IGNORECASE).group(0)
+            highlighted = highlighted.replace(f'{Match_quality}', f'{"[white on green4]" + Match_quality + "[default on default]"}')
+            logger.debug(f'Highlighted quality: {Match_quality}')
+
+    for codec in metadata.codec:
+        if codec.lower() in text.lower():
+            Match_codec = re.search(codec, text, re.IGNORECASE).group(0)
+            highlighted = highlighted.replace (f'{Match_codec}', f'{"[white on green4]" + Match_codec + "[default on default]"}')
+            logger.debug(f'Highlighted codec: {Match_codec}')
+    
+    return highlighted
 
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
@@ -527,7 +551,8 @@ def main():
                number = f"({info['year']})"
 
             metadata = extract_meta_data(filename, args.keyword)
-            
+            logger.debug(f'Metadata extracted:  {metadata}')
+
             if (args.title):
                 title=args.title
             else:
