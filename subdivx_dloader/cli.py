@@ -123,6 +123,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     try:
        soup = json.loads(page).get('aaData')
+       logger.debug(f'Soup Json: "{soup}"')
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
 
@@ -140,12 +141,12 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         download_list.append(key['descargas'])
         user_list.append(key['nick'])
 
-        # Format date (year-month-day)
-        match = re.search(r'(\d+-\d+-\d+)', str(key['fecha_subida']))
+        # Format date (year/month/day HH:MM)
+        match = re.search(r'(\d+-\d+-\d+\s+\d+:\d+)', str(key['fecha_subida']))
         if (match is None):
-            date_list.append('-')
+            date_list.append('--- --')
         else:
-            date_list.append(match.group(1))
+            date_list.append(match.group(1).replace("-", "/"))
 
     titles = title_list
 
@@ -180,8 +181,11 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
                 score += .50
         scores.append(score)
 
-    results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
-    details = sorted(zip(detalles_datos.items(), scores), key=lambda item: item[1], reverse=True)
+    results = sorted(zip(descriptions.items(), scores), key=lambda item: item[0], reverse=True)
+    details = sorted(zip(detalles_datos.items(), scores), key=lambda item: item[0], reverse=True)
+
+    logger.debug(f'Results List: "{results}"')
+    logger.debug(f'Details List: "{details}"')
 
     # Print subtitles search infos
     # Construct Table for console output
@@ -401,17 +405,17 @@ _extensions = [
 #obtained from http://flexget.com/wiki/Plugins/quality
 _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
               '1920x1080', '360p', '368p', '480', '480p', '576p',
-               '720i', '720p', 'bdrip', 'brrip', 'bdscr', 'bluray',
+               '720i', '720p', 'ddp5.1', 'bdrip', 'brrip', 'bdscr', 'bluray',
                'blurayrip', 'cam', 'dl', 'dsrdsrip', 'dvb', 'dvdrip',
                'dvdripdvd', 'dvdscr', 'hdtv', 'hr', 'ppvrip',
                'preair', 'sdtvpdtv', 'tvrip','web', 'web-dl',
                'web-dlwebdl', 'webrip', 'workprint')
 _keywords = (
-'2hd', 'adrenaline', 'amnz', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
+'2hd', 'adrenaline', 'amzn', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
 'ctrlhd', 'ctu', 'dimension', 'ebp', 'ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
 'galaxyrg', 'galaxytv', 'hazmatt', 'immerse', 'internal', 'ion10', 'killers', 'loki', 
 'lol', 'mement', 'minx', 'notv', 'phoenix', 'rarbg', 'sfm', 'sva', 'sparks', 'turbo', 
-'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta', 'ethel')
+'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta', 'ethel', 'ntb', 'flux')
 
 _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
