@@ -174,10 +174,10 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
                 score += 1
         for quality in metadata.quality:
             if quality.lower() in description[0][0].lower():
-                score += .5
+                score += .25
         for codec in metadata.codec:
             if codec.lower() in description[0][0].lower():
-                score += .25
+                score += .50
         scores.append(score)
 
     results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
@@ -187,7 +187,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # Construct Table for console output
     
     console = Console()
-    table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), title_style="bold green",show_header=True, header_style="bold yellow", show_lines=True)
+    table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), caption="[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo", title_style="bold green",
+                  show_header=True, header_style="bold yellow", caption_style="italic yellow", show_lines=True)
     table.add_column("#", justify="center", vertical="middle", style="bold green")
     table.add_column("Descripción", justify="center" )
     table.add_column("Descargas", justify="center", vertical="middle")
@@ -403,14 +404,14 @@ _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
                '720i', '720p', 'bdrip', 'brrip', 'bdscr', 'bluray',
                'blurayrip', 'cam', 'dl', 'dsrdsrip', 'dvb', 'dvdrip',
                'dvdripdvd', 'dvdscr', 'hdtv', 'hr', 'ppvrip',
-               'preair', 'r5', 'rc', 'sdtvpdtv', 'tc', 'tvrip',
-               'web', 'web-dl', 'web-dlwebdl', 'webrip', 'workprint')
+               'preair', 'sdtvpdtv', 'tvrip','web', 'web-dl',
+               'web-dlwebdl', 'webrip', 'workprint')
 _keywords = (
 '2hd', 'adrenaline', 'amnz', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
 'ctrlhd', 'ctu', 'dimension', 'ebp', 'ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
 'galaxyrg', 'galaxytv', 'hazmatt', 'immerse', 'internal', 'ion10', 'killers', 'loki', 
 'lol', 'mement', 'minx', 'notv', 'phoenix', 'rarbg', 'sfm', 'sva', 'sparks', 'turbo', 
-'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta')
+'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta', 'ethel')
 
 _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
@@ -423,7 +424,7 @@ def clean_screen():
 def highlight_text(text,  metadata):
     """Highlight all text  matches  metadata of the file"""
     highlighted = f"{text}"
-    #highlighted = str()
+    
     for keyword in metadata.keywords:
         if keyword.lower() in text.lower():
             Match_keyword = re.search(keyword, text, re.IGNORECASE).group(0)
@@ -433,7 +434,7 @@ def highlight_text(text,  metadata):
     for quality in metadata.quality:
         if quality.lower() in text.lower():
             Match_quality = re.search(quality, text, re.IGNORECASE).group(0)
-            highlighted = highlighted.replace(f'{Match_quality}', f'{"[white on green4]" + Match_quality + "[default on default]"}')
+            highlighted = highlighted.replace(f'{Match_quality}', f'{"[white on green4]" + Match_quality + "[default on default]"}', 1)
             logger.debug(f'Highlighted quality: {Match_quality}')
 
     for codec in metadata.codec:
