@@ -96,8 +96,8 @@ optional arguments:
 
 **New feature: file metadata highlighted!**
 
-![ Highlighted file metadata !](https://)
+![ Highlighted file metadata !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture05.gif)
 
 **New feature: Search by Season!**
 
-![ Search by Season !](https://)
+![ Search by Season !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture06.gif)
