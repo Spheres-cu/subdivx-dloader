@@ -224,7 +224,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             logger.debug('Download Canceled')
             print(BRed + "\n Cancelando descarga..." + NC)
             time.sleep(2)
-            #clean_screen()
+            clean_screen()
             sys.exit(0)
         url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[res])
     else:
@@ -287,7 +287,7 @@ def get_subtitle(url, path):
                     print(BRed + "\n Cancelando descarga..." + NC)
                     temp_file.close()
                     os.unlink(temp_file.name)
-                    time.sleep(3)
+                    time.sleep(2)
                     clean_screen()
                     sys.exit(0)
                 logger.info('Decompressing files')
@@ -349,8 +349,8 @@ def get_subtitle(url, path):
                     print(BRed + "\n Cancelando descarga..." + NC)
                     temp_file.close()
                     os.unlink(temp_file.name)
-                    time.sleep(3)
-                    #clean_screen()
+                    time.sleep(2)
+                    clean_screen()
                     sys.exit(0)
                 logger.info('Decompressing files')
                 if res == count:
@@ -384,8 +384,8 @@ def get_subtitle(url, path):
         raise NoResultsError(f'No suitable subtitles download for : "{url}"')
    
     # Cleaning
-    time.sleep(3)
-    #clean_screen()
+    time.sleep(2)
+    clean_screen()
 
 _extensions = [
     'avi', 'mkv', 'mp4',
