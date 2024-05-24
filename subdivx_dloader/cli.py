@@ -95,7 +95,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     title = ' '.join(title_f)
     buscar = f"{title} {number}"
     print("\r")
-    logger.info(f'Searching subtitles for: "{buscar}"')
+    logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     try:
         page = s.request(
             'POST',
@@ -140,26 +140,22 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         download_list.append(key['descargas'])
         user_list.append(key['nick'])
 
-        # Format date (year-month-day)
-        match = re.search(r'(\d+-\d+-\d+)', str(key['fecha_subida']))
+        # Format date (year/month/day HH:MM)
+        match = re.search(r'(\d+-\d+-\d+\s+\d+:\d+)', str(key['fecha_subida']))
         if (match is None):
-            date_list.append('-')
+            date_list.append('--- --')
         else:
-            date_list.append(match.group(1))
+            date_list.append(match.group(1).replace("-", "/"))
 
     titles = title_list
 
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     descriptions = {
-         description_list[i]: id_list[i] for i, t in enumerate(titles) 
+         description_list[i]: [id_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
         if all(word.lower() in t.lower() for word in buscar.split())
     }
-    detalles_datos = {
-         id_list[i] : [download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
-        if all(word.lower() in t.lower() for word in buscar.split())
-    }
-    
+   
     if not descriptions:
         raise NoResultsError(f'No suitable subtitles were found for: "{buscar}"')
 
@@ -170,24 +166,24 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
         score = 0
         for keyword in metadata.keywords:
-            if keyword.lower() in description[0][0].lower():
-                score += 1.5
-        for quality in metadata.quality:
-            if quality.lower() in description[0][0].lower():
+            if keyword.lower() in description:
                 score += 1
+        for quality in metadata.quality:
+            if quality.lower() in description:
+                score += .25
         for codec in metadata.codec:
-            if codec.lower() in description[0][0].lower():
-                score += .75
+            if codec.lower() in description:
+                score += .50
         scores.append(score)
 
     results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
-    details = sorted(zip(detalles_datos.items(), scores), key=lambda item: item[1], reverse=True)
 
     # Print subtitles search infos
     # Construct Table for console output
     
     console = Console()
-    table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), title_style="bold green",show_header=True, header_style="bold yellow", show_lines=True)
+    table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), caption="[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo", title_style="bold green",
+                  show_header=True, header_style="bold yellow", caption_style="italic yellow", show_lines=True)
     table.add_column("#", justify="center", vertical="middle", style="bold green")
     table.add_column("Descripción", justify="center" )
     table.add_column("Descargas", justify="center", vertical="middle")
@@ -196,14 +192,15 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     if (no_choose==False):
         count = 0
-        for item in (results):   
+        url_ids = []
+        for item in (results):
             try:
-                descripcion = tr.fill(str(item[0][0]), width=77)
-                detalles = details[count][0]
-                descargas = str(detalles[1][0])
-                usuario = str(detalles[1][1])
-                fecha = str(detalles[1][2]) 
-
+                descripcion = tr.fill(highlight_text(item[0][0], metadata), width=77)
+                detalles = item[0]
+                url_ids.append(detalles[1][0])
+                descargas = str(detalles[1][1])
+                usuario = str(detalles[1][2])
+                fecha = str(detalles[1][3])
                 table.add_row(str(count), descripcion, descargas, usuario, fecha)
             except IndexError:
                 pass   
@@ -218,7 +215,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             except KeyboardInterrupt:
                 logger.debug('Interrupted by user')
                 print(BRed + "\n\n Interrupto por el usuario..." + NC)
-                time.sleep(3)
+                time.sleep(2)
                 clean_screen()
                 sys.exit(1)
             except:
@@ -226,13 +223,13 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         if (res == count):
             logger.debug('Download Canceled')
             print(BRed + "\n Cancelando descarga..." + NC)
-            time.sleep(3)
+            time.sleep(2)
             clean_screen()
             sys.exit(0)
-        url = SUBDIVX_DOWNLOAD_PAGE + str((results[res][0][1]))
+        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[res])
     else:
         # get first subtitle
-        url = SUBDIVX_DOWNLOAD_PAGE + str(results[0][0][1])
+        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[0])
     print("\r")
     # get download page
     if (s.request("GET", url).status == 200):
@@ -290,7 +287,7 @@ def get_subtitle(url, path):
                     print(BRed + "\n Cancelando descarga..." + NC)
                     temp_file.close()
                     os.unlink(temp_file.name)
-                    time.sleep(3)
+                    time.sleep(2)
                     clean_screen()
                     sys.exit(0)
                 logger.info('Decompressing files')
@@ -352,7 +349,7 @@ def get_subtitle(url, path):
                     print(BRed + "\n Cancelando descarga..." + NC)
                     temp_file.close()
                     os.unlink(temp_file.name)
-                    time.sleep(3)
+                    time.sleep(2)
                     clean_screen()
                     sys.exit(0)
                 logger.info('Decompressing files')
@@ -387,8 +384,8 @@ def get_subtitle(url, path):
         raise NoResultsError(f'No suitable subtitles download for : "{url}"')
    
     # Cleaning
-    time.sleep(3)
-    #clean_screen()
+    time.sleep(2)
+    clean_screen()
 
 _extensions = [
     'avi', 'mkv', 'mp4',
@@ -400,25 +397,49 @@ _extensions = [
 #obtained from http://flexget.com/wiki/Plugins/quality
 _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
               '1920x1080', '360p', '368p', '480', '480p', '576p',
-               '720i', '720p', 'bdrip', 'brrip', 'bdscr', 'bluray',
+               '720i', '720p', 'ddp5.1', 'dd5.1', 'bdrip', 'brrip', 'bdscr', 'bluray',
                'blurayrip', 'cam', 'dl', 'dsrdsrip', 'dvb', 'dvdrip',
                'dvdripdvd', 'dvdscr', 'hdtv', 'hr', 'ppvrip',
-               'preair', 'r5', 'rc', 'sdtvpdtv', 'tc', 'tvrip',
-               'web', 'web-dl', 'web-dlwebdl', 'webrip', 'workprint')
+               'preair', 'sdtvpdtv', 'tvrip','web', 'web-dl',
+               'web-dlwebdl', 'webrip', 'workprint')
 _keywords = (
-'2hd', 'adrenaline', 'amnz', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
+'2hd', 'adrenaline', 'amzn', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
 'ctrlhd', 'ctu', 'dimension', 'ebp', 'ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
 'galaxyrg', 'galaxytv', 'hazmatt', 'immerse', 'internal', 'ion10', 'killers', 'loki', 
 'lol', 'mement', 'minx', 'notv', 'phoenix', 'rarbg', 'sfm', 'sva', 'sparks', 'turbo', 
-'torrentgalaxy', 'AMZN', 'PSA', 'NF', 'RBB', 'PCOK', 'EDITH')
+'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta', 'ethel', 'ntb', 'flux')
 
-_codecs = ('xvid', 'x264', 'h264', 'x265', 'HEVC')
+_codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
 def clean_screen():
     os.system('clear' if os.name != 'nt' else 'cls')
+
+def highlight_text(text,  metadata):
+    """Highlight all text  matches  metadata of the file"""
+    highlighted = f"{text}"
+    
+    for keyword in metadata.keywords:
+        if keyword.lower() in text.lower():
+            Match_keyword = re.search(keyword, text, re.IGNORECASE).group(0)
+            highlighted = highlighted.replace(f'{Match_keyword}', f'{"[white on green4]" + Match_keyword + "[default on default]"}', 1)
+            logger.debug(f'Highlighted keywords: {Match_keyword}')
+
+    for quality in metadata.quality:
+        if quality.lower() in text.lower():
+            Match_quality = re.search(quality, text, re.IGNORECASE).group(0)
+            highlighted = highlighted.replace(f'{Match_quality}', f'{"[white on green4]" + Match_quality + "[default on default]"}', 1)
+            logger.debug(f'Highlighted quality: {Match_quality}')
+
+    for codec in metadata.codec:
+        if codec.lower() in text.lower():
+            Match_codec = re.search(codec, text, re.IGNORECASE).group(0)
+            highlighted = highlighted.replace (f'{Match_codec}', f'{"[white on green4]" + Match_codec + "[default on default]"}', 1)
+            logger.debug(f'Highlighted codec: {Match_codec}')
+    
+    return highlighted
 
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
@@ -482,6 +503,8 @@ def main():
                         default=False, help="No verbose mode")
     parser.add_argument('--no-choose', '-nc', action='store_true',
                         default=False, help="No Choose sub manually")
+    parser.add_argument('--Season', '-S', action='store_true',
+                        default=False, help="Search for Season")
     parser.add_argument('--force', '-f', action='store_true',
                         default=False, help="override existing file")
     parser.add_argument('--keyword','-k',type=str,help="Add keyword to search among subtitles")
@@ -522,12 +545,13 @@ def main():
         try:
             info = guessit(filename)
             if info["type"] == "episode" :
-               number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info else f"s{info['season']:02}" 
+               number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info and not args.Season else f"s{info['season']:02}" 
             else:
                number = f"({info['year']})"
 
             metadata = extract_meta_data(filename, args.keyword)
-            
+            logger.debug(f'Metadata extracted:  {metadata}')
+
             if (args.title):
                 title=args.title
             else:

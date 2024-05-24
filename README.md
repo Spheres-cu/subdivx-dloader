@@ -5,6 +5,10 @@ Bumb! Working with Python 3.12 version
 
 Also added these features:
 
+ (20240524)
+ - Added highlighted of video file metadata.
+ - Added -S  or --Season argument for Search by Season. 
+
  (20240508)
 - Ability to select which subtitle download inside zip or rar file or download them All!
 - Now a logfile is generate with info and debug.
@@ -64,6 +68,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --quiet, -q
   --no-choose, -nc          Download the default match subtitle avaible. Now show all the available subtitle to download is de default behavior
+  --Season, -S          Search for Season 
   --force, -f           override existing file
   --keyword -k "<string>" _ Add the <string> to the list of keywords. Keywords are used when you have 
 
@@ -87,3 +92,12 @@ optional arguments:
 **Now  you can select wich subtitle download !**
 
 ![Select subtitle file to Download !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture04.gif)
+
+
+**New feature: file metadata highlighted!**
+
+![ Highlighted file metadata !](https://)
+
+**New feature: Search by Season!**
+
+![ Search by Season !](https://)

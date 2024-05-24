@@ -1,5 +1,11 @@
 Changelog
 =========
+1.5 (2024-05-24
+---------------
+
+- Highlighted file metadata in search results.
+- Added --Season, -S parameter for search by season.
+- Refactored code for better ordered search results based in filename metadata and more faster load results.
 
 1.4.1 (2024-05-09)
 ---------------
