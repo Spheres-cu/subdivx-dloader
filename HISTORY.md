@@ -1,6 +1,6 @@
 Changelog
 =========
-1.5 (2024-05-24
+1.5 (2024-05-24)
 ---------------
 
 - Highlighted file metadata in search results.
