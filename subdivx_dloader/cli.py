@@ -123,7 +123,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     try:
        soup = json.loads(page).get('aaData')
-       logger.debug(f'Soup Json: "{soup}"')
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
 
@@ -153,14 +152,10 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     descriptions = {
-         description_list[i]: id_list[i] for i, t in enumerate(titles) 
+         description_list[i]: [id_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
         if all(word.lower() in t.lower() for word in buscar.split())
     }
-    detalles_datos = {
-         id_list[i] : [download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
-        if all(word.lower() in t.lower() for word in buscar.split())
-    }
-    
+   
     if not descriptions:
         raise NoResultsError(f'No suitable subtitles were found for: "{buscar}"')
 
@@ -171,21 +166,17 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
         score = 0
         for keyword in metadata.keywords:
-            if keyword.lower() in description[0][0].lower():
+            if keyword.lower() in description:
                 score += 1
         for quality in metadata.quality:
-            if quality.lower() in description[0][0].lower():
+            if quality.lower() in description:
                 score += .25
         for codec in metadata.codec:
-            if codec.lower() in description[0][0].lower():
+            if codec.lower() in description:
                 score += .50
         scores.append(score)
 
-    results = sorted(zip(descriptions.items(), scores), key=lambda item: item[0], reverse=True)
-    details = sorted(zip(detalles_datos.items(), scores), key=lambda item: item[0], reverse=True)
-
-    logger.debug(f'Results List: "{results}"')
-    logger.debug(f'Details List: "{details}"')
+    results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
 
     # Print subtitles search infos
     # Construct Table for console output
@@ -201,14 +192,15 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     if (no_choose==False):
         count = 0
+        url_ids = []
         for item in (results):
             try:
                 descripcion = tr.fill(highlight_text(item[0][0], metadata), width=77)
-                detalles = details[count][0]
-                descargas = str(detalles[1][0])
-                usuario = str(detalles[1][1])
-                fecha = str(detalles[1][2]) 
-
+                detalles = item[0]
+                url_ids.append(detalles[1][0])
+                descargas = str(detalles[1][1])
+                usuario = str(detalles[1][2])
+                fecha = str(detalles[1][3])
                 table.add_row(str(count), descripcion, descargas, usuario, fecha)
             except IndexError:
                 pass   
@@ -223,7 +215,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             except KeyboardInterrupt:
                 logger.debug('Interrupted by user')
                 print(BRed + "\n\n Interrupto por el usuario..." + NC)
-                time.sleep(3)
+                time.sleep(2)
                 clean_screen()
                 sys.exit(1)
             except:
@@ -231,13 +223,13 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         if (res == count):
             logger.debug('Download Canceled')
             print(BRed + "\n Cancelando descarga..." + NC)
-            time.sleep(3)
+            time.sleep(2)
             #clean_screen()
             sys.exit(0)
-        url = SUBDIVX_DOWNLOAD_PAGE + str((results[res][0][1]))
+        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[res])
     else:
         # get first subtitle
-        url = SUBDIVX_DOWNLOAD_PAGE + str(results[0][0][1])
+        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[0])
     print("\r")
     # get download page
     if (s.request("GET", url).status == 200):
@@ -405,7 +397,7 @@ _extensions = [
 #obtained from http://flexget.com/wiki/Plugins/quality
 _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
               '1920x1080', '360p', '368p', '480', '480p', '576p',
-               '720i', '720p', 'ddp5.1', 'bdrip', 'brrip', 'bdscr', 'bluray',
+               '720i', '720p', 'ddp5.1', 'dd5.1', 'bdrip', 'brrip', 'bdscr', 'bluray',
                'blurayrip', 'cam', 'dl', 'dsrdsrip', 'dvb', 'dvdrip',
                'dvdripdvd', 'dvdscr', 'hdtv', 'hr', 'ppvrip',
                'preair', 'sdtvpdtv', 'tvrip','web', 'web-dl',
@@ -432,7 +424,7 @@ def highlight_text(text,  metadata):
     for keyword in metadata.keywords:
         if keyword.lower() in text.lower():
             Match_keyword = re.search(keyword, text, re.IGNORECASE).group(0)
-            highlighted = highlighted.replace(f'{Match_keyword}', f'{"[white on green4]" + Match_keyword + "[default on default]"}')
+            highlighted = highlighted.replace(f'{Match_keyword}', f'{"[white on green4]" + Match_keyword + "[default on default]"}', 1)
             logger.debug(f'Highlighted keywords: {Match_keyword}')
 
     for quality in metadata.quality:
@@ -444,7 +436,7 @@ def highlight_text(text,  metadata):
     for codec in metadata.codec:
         if codec.lower() in text.lower():
             Match_codec = re.search(codec, text, re.IGNORECASE).group(0)
-            highlighted = highlighted.replace (f'{Match_codec}', f'{"[white on green4]" + Match_codec + "[default on default]"}')
+            highlighted = highlighted.replace (f'{Match_codec}', f'{"[white on green4]" + Match_codec + "[default on default]"}', 1)
             logger.debug(f'Highlighted codec: {Match_codec}')
     
     return highlighted
