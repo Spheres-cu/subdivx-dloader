@@ -503,6 +503,8 @@ def main():
                         default=False, help="No verbose mode")
     parser.add_argument('--no-choose', '-nc', action='store_true',
                         default=False, help="No Choose sub manually")
+    parser.add_argument('--Season', '-S', action='store_true',
+                        default=False, help="Search for Season")
     parser.add_argument('--force', '-f', action='store_true',
                         default=False, help="override existing file")
     parser.add_argument('--keyword','-k',type=str,help="Add keyword to search among subtitles")
@@ -543,7 +545,7 @@ def main():
         try:
             info = guessit(filename)
             if info["type"] == "episode" :
-               number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info else f"s{info['season']:02}" 
+               number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info and not args.Season else f"s{info['season']:02}" 
             else:
                number = f"({info['year']})"
 
