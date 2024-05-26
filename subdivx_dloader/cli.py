@@ -153,7 +153,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # ie. search terms are in the title of the result item
     descriptions = {
          description_list[i]: [id_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
-        if all(word.lower() in t.lower() for word in buscar.split())
+        #if all(word.lower() in t.lower() for word in buscar)
+        if match_text(buscar, t)
     }
    
     if not descriptions:
@@ -414,6 +415,26 @@ _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
+def match_text(pattern, text):
+  """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
+  #regex_pattern = rf"^{re.escape(pattern)}$"
+
+  list_pattern = []
+  list_pattern = pattern.split(" ")
+  regex_pattern_initial = re.compile(rf"^{re.escape(list_pattern[0])}", re.IGNORECASE)
+  regex_pattern_final = re.compile(rf"{re.escape(list_pattern[len(list_pattern) - 1])}$", re.IGNORECASE)
+
+  r = True if regex_pattern_initial.search(text) and regex_pattern_final.search(text) else False
+  
+  #logger.debug(f'Regex Pattern inicial: {regex_pattern_initial} Regex Pattern Final: {regex_pattern_final} Text: {text}')
+  #logger.debug(f'Regex Pattern: {regex_pattern}  Text: {text}')
+  #r = re.search(regex_pattern, text, re.IGNORECASE)
+  if r :
+      logger.debug(f'Text: {text} Found: {r}')
+  else:
+      logger.debug(f'Text: {text} Found: {r}')
+  return r is not False
+
 def clean_screen():
     os.system('clear' if os.name != 'nt' else 'cls')
 
@@ -472,10 +493,12 @@ def subtitle_renamer(filepath):
         return filename
 
     dirpath = os.path.dirname(filepath)
+    #logger.debug(f'DirPath: {dirpath}')
     filename = os.path.basename(filepath)
     before = set(os.listdir(dirpath))
     yield
     after = set(os.listdir(dirpath))
+    #logger.debug(f'FileName: {filename}')
 
     # Fixed error for rename various subtitles with same filename
     for new_file in after - before:
@@ -568,6 +591,7 @@ def main():
             logger.error(str(e))
             url=''
         if(url !=''):
+            #logger.debug(f'FilePath: {filepath}')
             with subtitle_renamer(filepath):
                  get_subtitle(url, 'temp__' + filename )
 
