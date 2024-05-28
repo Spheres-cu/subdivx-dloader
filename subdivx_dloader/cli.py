@@ -153,7 +153,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # ie. search terms are in the title of the result item
     descriptions = {
          description_list[i]: [id_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
-        if all(word.lower() in t.lower() for word in buscar.split())
+        if match_text(buscar, t)
     }
    
     if not descriptions:
@@ -413,6 +413,20 @@ _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
+
+def match_text(pattern, text):
+  """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
+
+  list_pattern = []
+  list_pattern = pattern.split(" ")
+
+  re_pattern_initial = re.compile(rf"^{re.escape(list_pattern[0])}", re.IGNORECASE)
+  re_pattern_final = re.compile(rf"{re.escape(list_pattern[len(list_pattern) - 1])}.*$", re.IGNORECASE)
+
+  r = True if re_pattern_initial.search(text.strip()) and re_pattern_final.search(text) else False
+  logger.debug(f'Text: {text} Found: {r}')
+ 
+  return r 
 
 def clean_screen():
     os.system('clear' if os.name != 'nt' else 'cls')

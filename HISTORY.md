@@ -1,5 +1,10 @@
 Changelog
 =========
+1.5.1 (2024-05-28)
+---------------
+- Better search results filter.
+- Now show more faster the search results.
+
 1.5 (2024-05-24)
 ---------------
 

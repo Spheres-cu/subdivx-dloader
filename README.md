@@ -101,3 +101,7 @@ optional arguments:
 **New feature: Search by Season!**
 
 ![ Search by Season !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture06.gif)
+
+**More accurate search results!**
+
+![ More accurate search results! !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture07.gif)
