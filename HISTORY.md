@@ -1,5 +1,9 @@
 Changelog
 =========
+1.5.2 (2024-05-28)
+---------------
+- Fixed error of files  without year or season-episode number.
+
 1.5.1 (2024-05-28)
 ---------------
 - Better search results filter.

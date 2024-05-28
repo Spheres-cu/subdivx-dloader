@@ -561,7 +561,7 @@ def main():
             if info["type"] == "episode" :
                number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info and not args.Season else f"s{info['season']:02}" 
             else:
-               number = f"({info['year']})"
+               number = f"({info['year']})" if "year" in info  else  ""
 
             metadata = extract_meta_data(filename, args.keyword)
             logger.debug(f'Metadata extracted:  {metadata}')
