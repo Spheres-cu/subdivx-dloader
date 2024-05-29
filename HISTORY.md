@@ -1,5 +1,10 @@
 Changelog
 =========
+
+1.5.3 (2024-05-29)
+---------------
+- Added title column.
+
 1.5.2 (2024-05-28)
 ---------------
 - Fixed error of files  without year or season-episode number.

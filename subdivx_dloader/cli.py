@@ -152,7 +152,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     descriptions = {
-         description_list[i]: [id_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
+         description_list[i]: [id_list[i], title_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles)
         if match_text(buscar, t)
     }
    
@@ -185,6 +185,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), caption="[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo", title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="italic yellow", show_lines=True)
     table.add_column("#", justify="center", vertical="middle", style="bold green")
+    table.add_column("Título", justify="center", vertical="middle", style="bold green")
     table.add_column("Descripción", justify="center" )
     table.add_column("Descargas", justify="center", vertical="middle")
     table.add_column("Usuario", justify="center", vertical="middle")
@@ -198,10 +199,11 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
                 descripcion = tr.fill(highlight_text(item[0][0], metadata), width=77)
                 detalles = item[0]
                 url_ids.append(detalles[1][0])
-                descargas = str(detalles[1][1])
-                usuario = str(detalles[1][2])
-                fecha = str(detalles[1][3])
-                table.add_row(str(count), descripcion, descargas, usuario, fecha)
+                titulo = str(detalles[1][1])
+                descargas = str(detalles[1][2])
+                usuario = str(detalles[1][3])
+                fecha = str(detalles[1][4])
+                table.add_row(str(count), titulo, descripcion, descargas, usuario, fecha)
             except IndexError:
                 pass   
             count = count +1
