@@ -561,7 +561,7 @@ def main():
         filename = os.path.basename(filepath)
         
         try:
-            info = guessit(filename)
+            info = guessit(filename, "--exclude release_group")
             if info["type"] == "episode" :
                number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info and not args.Season else f"s{info['season']:02}" 
             else:
