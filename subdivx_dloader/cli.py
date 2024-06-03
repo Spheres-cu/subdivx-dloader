@@ -100,14 +100,15 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"},
+            headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"},
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
-            timeout=5.0
+            timeout=15.0
         ).data
 
     except urllib3.exceptions.NewConnectionError:
         print("\n"  + Red + "[Error,", "Failed to establish a new connection!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "- Your Internet connection!")
+        logger.debug(f'Network Connection Error: Failed to establish a new connection!')
         sys.exit(1)
 
     except urllib3.exceptions.TimeoutError:
@@ -115,10 +116,12 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
                 "- Your Internet connection\n" + \
                 "- Your Firewall connections\n" + \
                 "- www.subdivx.com availability\n")
+        logger.debug(f'Network Connection Timeout: Unable to reach https://www.subdivx.com servers!')
         sys.exit(1)
 
     except urllib3.exceptions.ProxyError:
         print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
+        logger.debug(f'Network Connection Error: Cannot connect to proxy!')
         sys.exit(1)
 
     try:
