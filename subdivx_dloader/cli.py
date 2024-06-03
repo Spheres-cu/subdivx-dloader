@@ -100,10 +100,10 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"},
+            headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"},
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
-            timeout=5.0
+            timeout=15.0
         ).data
 
     except urllib3.exceptions.NewConnectionError:
@@ -559,7 +559,7 @@ def main():
         filename = os.path.basename(filepath)
         
         try:
-            info = guessit(filename)
+            info = guessit(filename, "--exclude release_group")
             if info["type"] == "episode" :
                number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info and not args.Season else f"s{info['season']:02}" 
             else:

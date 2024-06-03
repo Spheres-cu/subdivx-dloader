@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.5.4 (2024-06-03)
+---------------
+- Fixed some filename info retrieve.
+- Update CLI.
+
 1.5.3 (2024-05-29)
 ---------------
 - Added title column.
