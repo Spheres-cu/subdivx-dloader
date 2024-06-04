@@ -247,7 +247,7 @@ def get_subtitle(url, path):
      s.request('GET', url , redirect=False, preload_content=False).headers.get('set-cookie')
     }
     
-    for i in range ( 9, 1, -1 ):
+    for i in range ( 9, 0, -1 ):
 
         logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
         

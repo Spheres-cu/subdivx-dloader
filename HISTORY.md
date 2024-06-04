@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.5.5 (2024-06-04)
+---------------
+- Update CLI.
+
 1.5.4 (2024-06-03)
 ---------------
 - Fixed some filename info retrieve.
