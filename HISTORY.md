@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.5.6 (2024-06-05)
+---------------
+- Fixed wrong search with special characters in title
+
 1.5.5 (2024-06-04)
 ---------------
 - Update CLI.
