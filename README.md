@@ -76,7 +76,7 @@ optional arguments:
   Example if rama966 is the creator of the subtitle you want to download, add it to the keyword and the 
   script will download that one. Combine -c with -k to see how subtitles are picked. 
   --title -t "<string>" _ Set the show main title to use instead of getting it from the file name
-
+```
 **The results is show in a beautiful table**
 
 ![Design with tables !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture03.png)
