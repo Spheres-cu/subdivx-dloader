@@ -418,6 +418,11 @@ Metadata = namedtuple('Metadata', 'keywords quality codec')
 
 def match_text(pattern, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
+  #Remove specials chars
+  special_char = ["`", "'", "´", ":", ".", "?"]
+  for i in special_char:
+      pattern = pattern.replace(i, '')
+      text = text.replace(i, '')
 
   list_pattern = []
   list_pattern = pattern.split(" ")
