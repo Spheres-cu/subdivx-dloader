@@ -91,8 +91,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         else the first subtitle is choosen
     """
     #Filter the title to avoid 's in names
-    title_f = [ x for x in title.split() if "\'s" not in x ]
-    title = ' '.join(title_f)
+    # title_f = [ x for x in title.split() if "\'s" not in x ]
+    # title = ' '.join(title_f)
     buscar = f"{title} {number}"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
@@ -421,7 +421,12 @@ Metadata = namedtuple('Metadata', 'keywords quality codec')
 
 def match_text(pattern, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
-
+  #Remove specials chars
+  special_char = ["`", "'", "´", ":", ".", "?"]
+  for i in special_char:
+      pattern = pattern.replace(i, '')
+      text = text.replace(i, '')
+  
   list_pattern = []
   list_pattern = pattern.split(" ")
 
