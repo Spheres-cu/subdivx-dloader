@@ -90,9 +90,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
         else the first subtitle is choosen
     """
-    #Filter the title to avoid 's in names
-    title_f = [ x for x in title.split() if "\'s" not in x ]
-    title = ' '.join(title_f)
     buscar = f"{title} {number}"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
