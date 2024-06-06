@@ -432,9 +432,14 @@ def match_text(pattern, text):
 
   re_pattern_initial = re.compile(rf"^{re.escape(list_pattern[0])}", re.IGNORECASE)
   re_pattern_final = re.compile(rf"{re.escape(list_pattern[len(list_pattern) - 1])}.*$", re.IGNORECASE)
+  re_full_pattern =re.compile(rf"\b{re.escape(pattern)}\b", re.IGNORECASE)
 
   r = True if re_pattern_initial.search(text.strip()) and re_pattern_final.search(text) else False
   logger.debug(f'Text: {text} Found: {r}')
+
+  if not r :
+      r = True if re_full_pattern.search(text) is not None else False
+      logger.debug(f'FullMatch: {text}: {r}')
  
   return r 
 
