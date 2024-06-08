@@ -156,7 +156,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # ie. search terms are in the title of the result item
     descriptions = {
          description_list[i]: [id_list[i], title_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles) 
-        if match_text(buscar, t)
+          if match_text(buscar, t)
     }
    
     if not descriptions:
