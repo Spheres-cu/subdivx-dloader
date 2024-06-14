@@ -71,7 +71,7 @@ file_log = os.path.join(temp_log_dir, 'subdivx-dloader.log')
 def setup_logger(level):
     global logger
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("urllib3")
     """
     logfile = logging.handlers.RotatingFileHandler(logger.name+'.log', maxBytes=1000 * 1024, backupCount=9)
     logfile.setFormatter(LOGGER_FORMATTER)
@@ -96,11 +96,17 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     buscar = f"{title} {number}"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
+    headers = urllib3.HTTPHeaderDict()
+    headers.add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0")
+    headers.add('cookie', 
+     s.request('GET', SUBDIVX_DOWNLOAD_PAGE , redirect=False, preload_content=False, headers=headers).headers.get('set-cookie')
+    )
+    
     try:
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
-            headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"},
+            headers=headers,
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
             timeout=15.0
@@ -123,7 +129,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
         logger.debug(f'Network Connection Error: Cannot connect to proxy!')
         sys.exit(1)
-
+    logger.debug(f'Page Data: {page}')
     try:
        soup = json.loads(page).get('aaData')
     except JSONDecodeError:
