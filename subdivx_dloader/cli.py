@@ -97,21 +97,23 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     headers = urllib3.HTTPHeaderDict()
-    headers.add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0")
+    headers.add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0")
     headers.add('cookie', 
-     s.request('GET', SUBDIVX_DOWNLOAD_PAGE , redirect=False, preload_content=False, headers=headers).headers.get('set-cookie')
+     s.request('GET', SUBDIVX_SEARCH_URL , redirect=False, preload_content=False).headers.get('set-cookie').split(";")[0]
     )
-    
+    logger.debug(f'Headers: %s', headers)
+    s.headers=dict(headers.itermerged())
     try:
+        logger.debug(f'Page Headers1: %s', s.headers)
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
-            headers=headers,
+            #headers=headers,
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
             timeout=15.0
         ).data
-
+        logger.debug(f'Page Headers2: %s', s.headers)
     except urllib3.exceptions.NewConnectionError:
         print("\n"  + Red + "[Error,", "Failed to establish a new connection!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "- Your Internet connection!")
         logger.debug(f'Network Connection Error: Failed to establish a new connection!')
@@ -270,7 +272,7 @@ def get_subtitle(url, path):
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
 
             zip_file = ZipFile(temp_file)
-            # In case of existence of various subtitles choice vich download
+            # In case of existence of various subtitles choice wich download
             if len(zip_file.infolist()) > 1 :
                 clean_screen()
                 console = Console()
