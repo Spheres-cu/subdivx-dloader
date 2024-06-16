@@ -245,7 +245,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     print("\r")
     # get download page
     if (s.request("GET", url).status == 200):
-      logger.info(f"Getting url from: {url}")
+      logger.debug(f"Getting url from: {url}")
       return url
 
 def get_subtitle(url, path):
@@ -307,7 +307,7 @@ def get_subtitle(url, path):
                         zip_file.extract(sub, os.path.dirname(path))
                     zip_file.close
                 else:
-                    if '.srt' in list_sub[res] and '__MACOSX' not in list_sub[res]:
+                    if '.srt' or '.ssa' in list_sub[res] and '__MACOSX' not in list_sub[res]:
                         logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.basename(path)]))
                         zip_file.extract(list_sub[res], os.path.dirname(path))
                     zip_file.close()
@@ -315,7 +315,7 @@ def get_subtitle(url, path):
             else:
                 for name in zip_file.infolist():
                     # don't unzip stub __MACOSX folders
-                    if '.srt' in name.filename and '__MACOSX' not in name.filename:
+                    if '.srt' or '.ssa' in name.filename and '__MACOSX' not in name.filename:
                         logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
                         zip_file.extract(name, os.path.dirname(path))
 
@@ -370,14 +370,14 @@ def get_subtitle(url, path):
                     rar_file.close()
                     logger.info(f"Done extract subtitles!")
                 else:
-                    if '.srt' in list_sub[res] and '__MACOSX' not in list_sub[res]:
+                    if '.srt' or '.ssa' in list_sub[res] and '__MACOSX' not in list_sub[res]:
                         logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.basename(path)]))
                         rar_file.extract(list_sub[res], os.path.dirname(path))
                         rar_file.close()
                         logger.info(f"Done extract subtitle!")
             else:
                 for name in rar_file.namelist():
-                    if '.srt' in name and '__MACOSX' not in name:
+                    if '.srt' or '.ssa' in name and '__MACOSX' not in name:
                         logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.basename(path)]))
                         rar_file.extract(name, os.path.dirname(path))
                 rar_file.close()
@@ -475,7 +475,7 @@ def highlight_text(text,  metadata):
     
     return highlighted
 
-sdx_cookie_name = 'sdx-cookie'
+sdxcookie_name = 'sdx-cookie'
 
 def get_Cookie():
     """ Retrieve sdx cookie"""
@@ -486,9 +486,9 @@ def get_Cookie():
 def stor_Cookie(sdx_cookie):
     """ Store sdx cookies """
     temp_dir = tempfile.gettempdir()
-    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
 
-    with open(cookie_path, 'w') as file:
+    with open(cookiesdx_path, 'w') as file:
         file.write(sdx_cookie)
         file.close()
     logger.debug('Store cookie')
@@ -496,9 +496,9 @@ def stor_Cookie(sdx_cookie):
 def load_Cookie():
     """ Load stored sdx cookies return ``None`` if not exist"""
     temp_dir = tempfile.gettempdir()
-    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
-    if os.path.exists(cookie_path):
-        with open(cookie_path, 'r') as filecookie:
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    if os.path.exists(cookiesdx_path):
+        with open(cookiesdx_path, 'r') as filecookie:
             sdx_cookie = filecookie.read()
     else:
         return None
@@ -530,11 +530,12 @@ def subtitle_renamer(filepath):
        filepath basename"""
 
     def extract_name(filepath):
+        """ Extract Filename """
         filename, fileext = os.path.splitext(filepath)
         if fileext in ('.part', '.temp', '.tmp'):
             filename, fileext = os.path.splitext(filename)
         return filename
-
+   
     dirpath = os.path.dirname(filepath)
     filename = os.path.basename(filepath)
     before = set(os.listdir(dirpath))
@@ -543,13 +544,13 @@ def subtitle_renamer(filepath):
 
     # Fixed error for rename various subtitles with same filename
     for new_file in after - before:
-        if not new_file.lower().endswith('srt'):
+        if not new_file.lower().endswith('srt') or new_file.lower().endswith('ssa'):
             # only apply to subtitles
             continue
         filename = extract_name(filepath)
 
         try:
-           if os.path.exists(filename + '.srt'):
+           if os.path.exists(filename + '.srt') or os.path.exists(filename + '.ssa'):
                continue
            else:
                os.rename(new_file, filename + '.srt')
@@ -575,6 +576,7 @@ def main():
     parser.add_argument('--title','-t',type=str,help="Set the title of the show")
     args = parser.parse_args()
 
+    # Setting logger
     setup_logger(LOGGER_LEVEL)
 
     logfile = logging.FileHandler(file_log, mode='w', encoding='utf-8')
@@ -587,7 +589,15 @@ def main():
         console.setFormatter(LOGGER_FORMATTER_SHORT)
         console.setLevel(logging.INFO)
         logger.addHandler(console)
-
+    
+    # Setting cookies
+    c_sdx = None
+    c_sdx = load_Cookie()
+    if c_sdx is None:
+            c_sdx = get_Cookie()
+            stor_Cookie(c_sdx)
+            logger.error(f'Not cookies found, please repeat the search')
+    
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
     else:
@@ -630,8 +640,8 @@ def main():
                 args.no_choose)
         except NoResultsError as e:
             logger.error(str(e))
-            url=''
-        if(url !=''):
+            url = None
+        if (url is not None):
             with subtitle_renamer(filepath):
                  get_subtitle(url, 'temp__' + filename )
 
