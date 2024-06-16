@@ -4,7 +4,7 @@ Changelog
 1.5.9 (2024-06-16)
 ---------------
 - Fixed urllib3 problem with the handling of cookies.
- **In case of error__Not cookies found, please repeat the search__**:  **Make the search again!**.
+- **In case of error __Not cookies found, please repeat the search__ **:  **Make the search again!**.
 
 1.5.8 (2024-06-08)
 ---------------
