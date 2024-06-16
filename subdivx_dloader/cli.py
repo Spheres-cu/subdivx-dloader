@@ -53,13 +53,13 @@ BGreen='\033[1;32m'
 NC='\033[0m' # No Color
 
 # Configure connections
-headers_dict = urllib3.HTTPHeaderDict()
-headers_dict.add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0")
-headers = dict(headers_dict.itermerged())
+headers={"user-agent" : 
+         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
+
 s = urllib3.PoolManager(headers=headers, ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', headers=headers, ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
