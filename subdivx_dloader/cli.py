@@ -476,7 +476,7 @@ def highlight_text(text,  metadata):
     
     return highlighted
 
-sdx_cookie_name = 'sdx-cookie'
+sdxcookie_name = 'sdx-cookie'
 
 def get_Cookie():
     """ Retrieve sdx cookie"""
@@ -487,40 +487,24 @@ def get_Cookie():
 def stor_Cookie(sdx_cookie):
     """ Store sdx cookies """
     temp_dir = tempfile.gettempdir()
-    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
 
-    with open(cookie_path, 'w') as file:
+    with open(cookiesdx_path, 'w') as file:
         file.write(sdx_cookie)
         file.close()
     logger.debug('Store cookie')
-
+    
 def load_Cookie():
     """ Load stored sdx cookies return ``None`` if not exist"""
     temp_dir = tempfile.gettempdir()
-    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
-    if os.path.exists(cookie_path):
-        with open(cookie_path, 'r') as filecookie:
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    if os.path.exists(cookiesdx_path):
+        with open(cookiesdx_path, 'r') as filecookie:
             sdx_cookie = filecookie.read()
     else:
         return None
     logger.debug('Cookie Loaded')
     return sdx_cookie
-
-# def get_cookie():
-#     """ Get C00kies from Pool Connections"""
-#     header_cookie = None
-#     temp_cookie = NamedTemporaryFile(delete=False)
-#     cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL , redirect=False, preload_content=False).headers.get('Set-Cookie').split(";")[0]
-#     temp_cookie.write(str.encode(cookie_sdx,"utf-8"))
-#     temp_cookie.seek(0)
-    
-#     with open(temp_cookie.name, 'r') as filecookie:
-#         header_cookie =filecookie.read()
-    
-#     temp_cookie.close()
-#     os.unlink(temp_cookie.name)
-
-#     return header_cookie
 
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
@@ -593,7 +577,8 @@ def main():
     parser.add_argument('--keyword','-k',type=str,help="Add keyword to search among subtitles")
     parser.add_argument('--title','-t',type=str,help="Set the title of the show")
     args = parser.parse_args()
-
+    
+    # Setting logger
     setup_logger(LOGGER_LEVEL)
 
     logfile = logging.FileHandler(file_log, mode='w', encoding='utf-8')
@@ -606,6 +591,14 @@ def main():
         console.setFormatter(LOGGER_FORMATTER_SHORT)
         console.setLevel(logging.INFO)
         logger.addHandler(console)
+
+    # Setting cookies
+    c_sdx = None
+    c_sdx = load_Cookie()
+    if c_sdx is None:
+            c_sdx = get_Cookie()
+            stor_Cookie(c_sdx)
+            logger.error(f'Not cookies found, please repeat the search')
 
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
