@@ -250,13 +250,11 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
 def get_subtitle(url, path):
     """Download subtitles from ``url`` to a destination ``path``"""
+    
     temp_file = NamedTemporaryFile(delete=False)
     SUCCESS = False
-    # get direct download link
-    headers = {'cookie': 
-     s.request('GET', url , redirect=False, preload_content=False).headers.get('set-cookie')
-    }
-    
+
+    # get direct download link    
     for i in range ( 9, 0, -1 ):
 
         logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
