@@ -110,7 +110,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
-            headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"},
+            headers=headers,
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
             timeout=15.0
