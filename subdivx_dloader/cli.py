@@ -52,7 +52,11 @@ Green='\033[0;32m'
 BGreen='\033[1;32m'
 NC='\033[0m' # No Color
 
-s = urllib3.PoolManager(ca_certs=certifi.where())
+# Configure connections
+headers_dict = urllib3.HTTPHeaderDict()
+headers_dict.add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0")
+headers = dict(headers_dict.itermerged())
+s = urllib3.PoolManager(headers=headers, ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
 #s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
@@ -71,7 +75,7 @@ file_log = os.path.join(temp_log_dir, 'subdivx-dloader.log')
 def setup_logger(level):
     global logger
 
-    logger = logging.getLogger("urllib3")
+    logger = logging.getLogger(__name__)
     """
     logfile = logging.handlers.RotatingFileHandler(logger.name+'.log', maxBytes=1000 * 1024, backupCount=9)
     logfile.setFormatter(LOGGER_FORMATTER)
@@ -90,30 +94,28 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
         else the first subtitle is choosen
     """
-    #Filter the title to avoid 's in names
-    # title_f = [ x for x in title.split() if "\'s" not in x ]
-    # title = ' '.join(title_f)
+    cookie_sdx = None
+    cookie_sdx = load_Cookie()
+    if cookie_sdx is None:
+         cookie_sdx = get_Cookie()
+         stor_Cookie(cookie_sdx)
+         logger.info(f'Not cookies found, please repeat the search')
+    
+    headers['Cookie'] = cookie_sdx
+
     buscar = f"{title} {number}"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
-    headers = urllib3.HTTPHeaderDict()
-    headers.add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0")
-    headers.add('cookie', 
-     s.request('GET', SUBDIVX_SEARCH_URL , redirect=False, preload_content=False).headers.get('set-cookie').split(";")[0]
-    )
-    logger.debug(f'Headers: %s', headers)
-    s.headers=dict(headers.itermerged())
     try:
-        logger.debug(f'Page Headers1: %s', s.headers)
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
-            #headers=headers,
+            headers=headers,
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
             timeout=15.0
         ).data
-        logger.debug(f'Page Headers2: %s', s.headers)
+
     except urllib3.exceptions.NewConnectionError:
         print("\n"  + Red + "[Error,", "Failed to establish a new connection!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "- Your Internet connection!")
         logger.debug(f'Network Connection Error: Failed to establish a new connection!')
@@ -131,7 +133,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
         logger.debug(f'Network Connection Error: Cannot connect to proxy!')
         sys.exit(1)
-    logger.debug(f'Page Data: {page}')
+
     try:
        soup = json.loads(page).get('aaData')
     except JSONDecodeError:
@@ -253,11 +255,7 @@ def get_subtitle(url, path):
     """Download subtitles from ``url`` to a destination ``path``"""
     temp_file = NamedTemporaryFile(delete=False)
     SUCCESS = False
-    # get direct download link
-    headers = {'cookie': 
-     s.request('GET', url , redirect=False, preload_content=False).headers.get('set-cookie')
-    }
-    
+    # get direct download link 
     for i in range ( 9, 0, -1 ):
 
         logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
@@ -477,6 +475,52 @@ def highlight_text(text,  metadata):
             logger.debug(f'Highlighted codec: {Match_codec}')
     
     return highlighted
+
+sdx_cookie_name = 'sdx-cookie'
+
+def get_Cookie():
+    """ Retrieve sdx cookie"""
+    logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
+    cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL).headers.get('Set-Cookie').split(';')[0]
+    return cookie_sdx
+
+def stor_Cookie(sdx_cookie):
+    """ Store sdx cookies """
+    temp_dir = tempfile.gettempdir()
+    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
+
+    with open(cookie_path, 'w') as file:
+        file.write(sdx_cookie)
+        file.close()
+    logger.debug('Store cookie')
+
+def load_Cookie():
+    """ Load stored sdx cookies return ``None`` if not exist"""
+    temp_dir = tempfile.gettempdir()
+    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
+    if os.path.exists(cookie_path):
+        with open(cookie_path, 'r') as filecookie:
+            sdx_cookie = filecookie.read()
+    else:
+        return None
+    logger.debug('Cookie Loaded')
+    return sdx_cookie
+
+# def get_cookie():
+#     """ Get C00kies from Pool Connections"""
+#     header_cookie = None
+#     temp_cookie = NamedTemporaryFile(delete=False)
+#     cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL , redirect=False, preload_content=False).headers.get('Set-Cookie').split(";")[0]
+#     temp_cookie.write(str.encode(cookie_sdx,"utf-8"))
+#     temp_cookie.seek(0)
+    
+#     with open(temp_cookie.name, 'r') as filecookie:
+#         header_cookie =filecookie.read()
+    
+#     temp_cookie.close()
+#     os.unlink(temp_cookie.name)
+
+#     return header_cookie
 
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
