@@ -52,10 +52,14 @@ Green='\033[0;32m'
 BGreen='\033[1;32m'
 NC='\033[0m' # No Color
 
-s = urllib3.PoolManager(ca_certs=certifi.where())
+# Configure connections
+headers={"user-agent" : 
+         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
+
+s = urllib3.PoolManager(headers=headers, ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', headers=headers, ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
@@ -90,6 +94,15 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
         else the first subtitle is choosen
     """
+    cookie_sdx = None
+    cookie_sdx = load_Cookie()
+    if cookie_sdx is None:
+         cookie_sdx = get_Cookie()
+         stor_Cookie(cookie_sdx)
+         logger.info(f'Not cookies found, please repeat the search')
+    
+    headers['Cookie'] = cookie_sdx
+
     buscar = f"{title} {number}"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
@@ -463,6 +476,36 @@ def highlight_text(text,  metadata):
             logger.debug(f'Highlighted codec: {Match_codec}')
     
     return highlighted
+
+sdx_cookie_name = 'sdx-cookie'
+
+def get_Cookie():
+    """ Retrieve sdx cookie"""
+    logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
+    cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL).headers.get('Set-Cookie').split(';')[0]
+    return cookie_sdx
+
+def stor_Cookie(sdx_cookie):
+    """ Store sdx cookies """
+    temp_dir = tempfile.gettempdir()
+    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
+
+    with open(cookie_path, 'w') as file:
+        file.write(sdx_cookie)
+        file.close()
+    logger.debug('Store cookie')
+    
+def load_Cookie():
+    """ Load stored sdx cookies return ``None`` if not exist"""
+    temp_dir = tempfile.gettempdir()
+    cookie_path = os.path.join(temp_dir, sdx_cookie_name)
+    if os.path.exists(cookie_path):
+        with open(cookie_path, 'r') as filecookie:
+            sdx_cookie = filecookie.read()
+    else:
+        return None
+    logger.debug('Cookie Loaded')
+    return sdx_cookie
 
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
