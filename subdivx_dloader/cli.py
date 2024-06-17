@@ -94,14 +94,14 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
         else the first subtitle is choosen
     """
-    cookie_sdx = None
-    cookie_sdx = load_Cookie()
-    if cookie_sdx is None:
-         cookie_sdx = get_Cookie()
-         stor_Cookie(cookie_sdx)
-         logger.info(f'Not cookies found, please repeat the search')
+    # c_sdx = None
+    # c_sdx = load_Cookie()
+    # if c_sdx is None:
+    #      c_sdx = get_Cookie()
+    #      stor_Cookie(c_sdx)
+    #      logger.info(f'Not cookies found, please repeat the search')
     
-    headers['Cookie'] = cookie_sdx
+    headers['Cookie'] = c_sdx
 
     buscar = f"{title} {number}"
     print("\r")
@@ -591,6 +591,7 @@ def main():
         logger.addHandler(console)
     
     # Setting cookies
+    global c_sdx
     c_sdx = None
     c_sdx = load_Cookie()
     if c_sdx is None:
