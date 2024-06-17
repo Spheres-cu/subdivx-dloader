@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.0 (2024-06-17)
+------------------
+- Update CLI
+
 1.5.9 (2024-06-16)
 ---------------
 - Fixed urllib3 problem with the handling of cookies.
