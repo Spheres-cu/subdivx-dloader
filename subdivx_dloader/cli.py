@@ -94,12 +94,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
         else the first subtitle is choosen
     """
-    # c_sdx = None
-    # c_sdx = load_Cookie()
-    # if c_sdx is None:
-    #      c_sdx = get_Cookie()
-    #      stor_Cookie(c_sdx)
-    #      logger.info(f'Not cookies found, please repeat the search')
     
     headers['Cookie'] = c_sdx
 
