@@ -1,6 +1,57 @@
 Changelog
 =========
 
+1.6.0 (2024-06-17)
+------------------
+- Update CLI
+
+1.5.9 (2024-06-16)
+---------------
+- Fixed urllib3 problem with the handling of cookies.
+- **In case of error: _Not cookies found, please repeat the search._  Make the search again!**.
+- Other minor fixes
+
+1.5.8 (2024-06-08)
+---------------
+- Update title search.
+
+1.5.7 (2024-06-05)
+---------------
+- Update CLI.
+
+1.5.6 (2024-06-05)
+---------------
+- Fixed wrong search with special characters in title
+
+1.5.5 (2024-06-04)
+---------------
+- Update CLI.
+
+1.5.4 (2024-06-03)
+---------------
+- Fixed some filename info retrieve.
+- Update CLI.
+
+1.5.3 (2024-05-29)
+---------------
+- Added title column.
+
+1.5.2 (2024-05-28)
+---------------
+- Fixed error of files  without year or season-episode number.
+
+1.5.1 (2024-05-28)
+---------------
+- Better search results filter.
+- Now show more faster the search results.
+
+1.5 (2024-05-24)
+---------------
+
+- Highlighted file metadata in search results.
+- Added --Season, -S parameter for search by season.
+- Refactored code for better ordered search results based in filename metadata and more faster load results.
+
 1.4.1 (2024-05-09)
 ---------------
 - Fixed error for rename various subtitles with same filename.
