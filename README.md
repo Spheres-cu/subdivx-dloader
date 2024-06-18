@@ -5,6 +5,10 @@ Bumb! Working with Python 3.12 version
 
 Also added these features:
 
+ (20240524)
+ - Added highlighted of video file metadata.
+ - Added -S  or --Season argument for Search by Season. 
+
  (20240508)
 - Ability to select which subtitle download inside zip or rar file or download them All!
 - Now a logfile is generate with info and debug.
@@ -64,6 +68,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --quiet, -q
   --no-choose, -nc          Download the default match subtitle avaible. Now show all the available subtitle to download is de default behavior
+  --Season, -S          Search for Season 
   --force, -f           override existing file
   --keyword -k "<string>" _ Add the <string> to the list of keywords. Keywords are used when you have 
 
@@ -71,14 +76,6 @@ optional arguments:
   Example if rama966 is the creator of the subtitle you want to download, add it to the keyword and the 
   script will download that one. Combine -c with -k to see how subtitles are picked. 
   --title -t "<string>" _ Set the show main title to use instead of getting it from the file name
-
-
-.. tip::
-    If you want to look for a subtitle with an 's apostrophe, check that the file name is "zoey's.extraordinary.playlist.s01e01.mp4" 
-    and no "zoeys.extraordinary.playlist.s01e01.mp4". Also you can remove the problematic words from the file name and leave it as
-    "extraordinary.playlist.s01e04.mp4" and it may work.
-    Also can use the -t option to set the name, and then use the apostrophe escaped (\')
-
 ```
 **The results is show in a beautiful table**
 
@@ -87,3 +84,16 @@ optional arguments:
 **Now  you can select wich subtitle download !**
 
 ![Select subtitle file to Download !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture04.gif)
+
+
+**New feature: file metadata highlighted!**
+
+![ Highlighted file metadata !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture05.gif)
+
+**New feature: Search by Season!**
+
+![ Search by Season !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture06.gif)
+
+**More accurate search results!**
+
+![ More accurate search results! !](https://github.com/Spheres-cu/subdivx-dloader/blob/master/captures/capture07.gif)
