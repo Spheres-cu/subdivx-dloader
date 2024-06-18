@@ -12,6 +12,7 @@ import urllib3
 import tempfile
 import textwrap as tr
 import logging.handlers
+from datetime import datetime, timedelta
 from colorama import init
 from guessit import guessit
 from rarfile import is_rarfile, RarFile
@@ -124,6 +125,9 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     except urllib3.exceptions.ProxyError:
         print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
         sys.exit(1)
+
+    except urllib3.exceptions.HTTPError as e:
+        logger.error(f"HTTP error encountered: {e}")
 
     try:
        soup = json.loads(page).get('aaData')
@@ -471,6 +475,32 @@ def highlight_text(text,  metadata):
 
 sdxcookie_name = 'sdx-cookie'
 
+def check_Cookie_Status():
+    """Check the time and existence of the `cookie` session and return it"""
+    cookie = load_Cookie()
+    if cookie is None or exp_time_Cookie is True: 
+        cookie = get_Cookie()
+        stor_Cookie(cookie)
+        cookie = load_Cookie()
+        logger.debug('Cookie Loaded')
+        logger.error(f'Not cookies found, please repeat the search')
+
+    return cookie
+
+def exp_time_Cookie():
+    """Compare modified time and return `True` if is expired"""
+    # Get cookie modified time and convert it to datetime
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    csdx_ti_m = datetime.fromtimestamp(os.path.getmtime(cookiesdx_path))
+    delta_csdx = datetime.now() - csdx_ti_m
+    exp_c_time = timedelta(hours=12)
+
+    if delta_csdx > exp_c_time:
+            return True 
+    else:
+        return False
+
 def get_Cookie():
     """ Retrieve sdx cookie"""
     logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
@@ -496,7 +526,7 @@ def load_Cookie():
             sdx_cookie = filecookie.read()
     else:
         return None
-    logger.debug('Cookie Loaded')
+
     return sdx_cookie
 
 def extract_meta_data(filename, kword):
@@ -587,11 +617,7 @@ def main():
     # Setting cookies
     global c_sdx
     c_sdx = None
-    c_sdx = load_Cookie()
-    if c_sdx is None:
-            c_sdx = get_Cookie()
-            stor_Cookie(c_sdx)
-            logger.error(f'Not cookies found, please repeat the search')
+    c_sdx = check_Cookie_Status()
     
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
