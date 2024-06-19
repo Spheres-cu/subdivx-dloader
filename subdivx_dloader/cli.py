@@ -128,12 +128,12 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     except urllib3.exceptions.HTTPError as e:
         logger.error(f"HTTP error encountered: {e}")
-
+    #page = load_aadata()
     try:
        soup = json.loads(page).get('aaData')
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
-
+    #store_aadata(page)
     id_list = list()
     title_list = list()
     description_list = list()
@@ -246,7 +246,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       logger.debug(f"Getting url from: {url}")
       return url
 
-def get_subtitle(url, path):
+def get_subtitle(url):
     """Download subtitles from ``url`` to a destination ``path``"""
     
     temp_file = NamedTemporaryFile(delete=False)
@@ -301,21 +301,21 @@ def get_subtitle(url, path):
                 logger.info('Decompressing files')
                 if res == count:
                     for sub in list_sub:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.basename(path)]))
-                        zip_file.extract(sub, os.path.dirname(path))
-                    zip_file.close
+                        logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
+                        zip_file.extract(sub, os.path.dirname(ARGS_PATH))
+                    zip_file.close()
                 else:
                     if '.srt' or '.ssa' in list_sub[res] and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.basename(path)]))
-                        zip_file.extract(list_sub[res], os.path.dirname(path))
+                        logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
+                        zip_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
                     zip_file.close()
                 logger.info(f"Done extract subtitles!")
             else:
                 for name in zip_file.infolist():
                     # don't unzip stub __MACOSX folders
                     if '.srt' or '.ssa' in name.filename and '__MACOSX' not in name.filename:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
-                        zip_file.extract(name, os.path.dirname(path))
+                        logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
+                        zip_file.extract(name, os.path.dirname(ARGS_PATH))
 
                 zip_file.close()
                 logger.info(f"Done extract subtitle!")
@@ -363,21 +363,21 @@ def get_subtitle(url, path):
                 logger.info('Decompressing files')
                 if res == count:
                     for sub in list_sub:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.basename(path)]))
+                        logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
                         rar_file.extract(sub, os.path.dirname(path))
                     rar_file.close()
                     logger.info(f"Done extract subtitles!")
                 else:
                     if '.srt' or '.ssa' in list_sub[res] and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.basename(path)]))
-                        rar_file.extract(list_sub[res], os.path.dirname(path))
+                        logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
+                        rar_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
                         rar_file.close()
                         logger.info(f"Done extract subtitle!")
             else:
                 for name in rar_file.namelist():
                     if '.srt' or '.ssa' in name and '__MACOSX' not in name:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.basename(path)]))
-                        rar_file.extract(name, os.path.dirname(path))
+                        logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.dirname(ARGS_PATH)]))
+                        rar_file.extract(name, os.path.dirname(ARGS_PATH))
                 rar_file.close()
                 logger.info(f"Done extract subtitle!")
             break
@@ -419,6 +419,7 @@ _keywords = (
 
 _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
+_sub_extensions = ['.srt', '.ssa']
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
@@ -529,6 +530,27 @@ def load_Cookie():
 
     return sdx_cookie
 
+def store_aadata(aadata):
+    """ Store aadata """
+    temp_dir = tempfile.gettempdir()
+    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
+
+    with open(aadata_path, 'wb') as file:
+        file.write(aadata)
+        file.close()
+    logger.debug('Store aadata')
+
+def load_aadata():
+    temp_dir = tempfile.gettempdir()
+    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
+    if os.path.exists(aadata_path):
+        with open(aadata_path, 'r') as aadata_file:
+            sdx_aadata = aadata_file.read()
+    else:
+        return None
+
+    return sdx_aadata
+
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos""" 
@@ -568,16 +590,23 @@ def subtitle_renamer(filepath):
 
     # Fixed error for rename various subtitles with same filename
     for new_file in after - before:
-        if not new_file.lower().endswith('srt') or new_file.lower().endswith('ssa'):
+        new_ext = os.path.splitext(new_file)[1]
+        if new_ext not in _sub_extensions:
             # only apply to subtitles
             continue
         filename = extract_name(filepath)
+        new_file_dirpath = os.path.join(os.path.dirname(filename), new_file)
+
+        # logger.debug(f'New File: {new_file}')
+        # logger.debug(f'File to rename: {filename}')
+        # logger.debug(f'New ext: {new_ext}')
+        # logger.debug(f'New file dirpath: {new_file_dirpath}')
 
         try:
-           if os.path.exists(filename + '.srt') or os.path.exists(filename + '.ssa'):
+           if os.path.exists(filename + new_ext):
                continue
            else:
-               os.rename(new_file, filename + '.srt')
+               os.rename(new_file_dirpath, filename + new_ext)
         
         except OSError as e:
               print(e)
@@ -621,19 +650,26 @@ def main():
     
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
+      global ARGS_PATH
+      ARGS_PATH = args.path
     else:
         logger.error(f'No file or folder were found for: "{args.path}"')
         sys.exit(1)
-    
+
+    exits_sub = False
     for filepath in cursor.findFiles():
         # skip if a subtitle for this file exists
-        sub_file = os.path.splitext(filepath)[0] + '.srt'
-        if os.path.exists(sub_file):
-            if args.force:
-                os.remove(sub_file)
-            else:
-                logger.info(f'Subtitle already exits use -f for force downloading')
-                continue
+        sub_file = os.path.splitext(filepath)[0]
+        for ext in _sub_extensions:
+            if os.path.exists(sub_file + ext):
+                if args.force:
+                   os.remove(sub_file + ext)
+                else:
+                    exits_sub = True
+    
+        if exits_sub:
+            logger.info(f'Subtitle already exits use -f for force downloading')
+            continue
 
         filename = os.path.basename(filepath)
         
@@ -664,7 +700,7 @@ def main():
             url = None
         if (url is not None):
             with subtitle_renamer(filepath):
-                 get_subtitle(url, 'temp__' + filename )
+                 get_subtitle(url)
 
 
 if __name__ == '__main__':
