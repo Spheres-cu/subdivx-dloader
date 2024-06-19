@@ -483,7 +483,7 @@ def check_Cookie_Status():
         stor_Cookie(cookie)
         cookie = load_Cookie()
         logger.debug('Cookie Loaded')
-        logger.error(f'Not cookies found, please repeat the search')
+        logger.error(f'Not cookies found or expired, please repeat the search')
 
     return cookie
 
