@@ -364,7 +364,7 @@ def get_subtitle(url):
                 if res == count:
                     for sub in list_sub:
                         logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
-                        rar_file.extract(sub, os.path.dirname(path))
+                        rar_file.extract(sub, os.path.dirname(ARGS_PATH))
                     rar_file.close()
                     logger.info(f"Done extract subtitles!")
                 else:
