@@ -57,7 +57,7 @@ NC='\033[0m' # No Color
 headers={"user-agent" : 
          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
 
-s = urllib3.PoolManager(headers=headers, ca_certs=certifi.where())
+s = urllib3.PoolManager(num_pools=1, headers=headers, ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
 #s = urllib3.ProxyManager('http://127.0.0.1:3128/', headers=headers, ca_certs=certifi.where())
@@ -131,6 +131,10 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     #page = load_aadata()
     try:
        soup = json.loads(page).get('aaData')
+       sEcho = json.loads(page).get('sEcho')
+       if sEcho == "0" :
+           logger.error(f'Not cookies found or expired, please repeat the search')
+
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
     #store_aadata(page)
