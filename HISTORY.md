@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.6.1 (2024-06-19)
+1.6.2 (2024-06-19)
 ------------------
 - Fixed extract and rename subtitles
 
