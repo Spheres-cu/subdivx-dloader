@@ -66,7 +66,7 @@ class NoResultsError(Exception):
     pass
 
 # Setting Loggers
-LOGGER_LEVEL = logging.DEBUG
+LOGGER_LEVEL = logging.INFO
 LOGGER_FORMATTER_LONG = logging.Formatter('%(asctime)-12s %(levelname)-6s %(message)s', '%Y-%m-%d %H:%M:%S')
 LOGGER_FORMATTER_SHORT = logging.Formatter('| %(levelname)s | %(message)s')
 
@@ -246,7 +246,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       logger.debug(f"Getting url from: {url}")
       return url
 
-def get_subtitle(url, path):
+def get_subtitle(url):
     """Download subtitles from ``url`` to a destination ``path``"""
     
     temp_file = NamedTemporaryFile(delete=False)
@@ -301,22 +301,22 @@ def get_subtitle(url, path):
                 logger.info('Decompressing files')
                 if res == count:
                     for sub in list_sub:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.basename(path)]))
-                        zip_file.extract(sub, os.path.dirname(path))
-                    zip_file.close
+                        if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
+                            logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
+                            zip_file.extract(sub, os.path.dirname(ARGS_PATH))
+                    zip_file.close()
                 else:
-                    if '.srt' or '.ssa' in list_sub[res] and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.basename(path)]))
-                        zip_file.extract(list_sub[res], os.path.dirname(path))
+                    if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
+                        logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
+                        zip_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
                     zip_file.close()
                 logger.info(f"Done extract subtitles!")
             else:
                 for name in zip_file.infolist():
                     # don't unzip stub __MACOSX folders
-                    if '.srt' or '.ssa' in name.filename and '__MACOSX' not in name.filename:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.basename(path)]))
-                        zip_file.extract(name, os.path.dirname(path))
-
+                    if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
+                        logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
+                        zip_file.extract(name, os.path.dirname(ARGS_PATH))
                 zip_file.close()
                 logger.info(f"Done extract subtitle!")
 
@@ -363,21 +363,22 @@ def get_subtitle(url, path):
                 logger.info('Decompressing files')
                 if res == count:
                     for sub in list_sub:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.basename(path)]))
-                        rar_file.extract(sub, os.path.dirname(path))
+                        if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
+                            logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
+                            rar_file.extract(sub, os.path.dirname(ARGS_PATH))
                     rar_file.close()
                     logger.info(f"Done extract subtitles!")
                 else:
-                    if '.srt' or '.ssa' in list_sub[res] and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.basename(path)]))
-                        rar_file.extract(list_sub[res], os.path.dirname(path))
-                        rar_file.close()
+                    if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
+                        logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
+                        rar_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
                         logger.info(f"Done extract subtitle!")
+                    rar_file.close()
             else:
                 for name in rar_file.namelist():
-                    if '.srt' or '.ssa' in name and '__MACOSX' not in name:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.basename(path)]))
-                        rar_file.extract(name, os.path.dirname(path))
+                    if any(name.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name:
+                        logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.dirname(ARGS_PATH)]))
+                        rar_file.extract(name, os.path.dirname(ARGS_PATH))
                 rar_file.close()
                 logger.info(f"Done extract subtitle!")
             break
@@ -419,6 +420,7 @@ _keywords = (
 
 _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
+_sub_extensions = ['.srt', '.ssa']
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
@@ -568,16 +570,18 @@ def subtitle_renamer(filepath):
 
     # Fixed error for rename various subtitles with same filename
     for new_file in after - before:
-        if not new_file.lower().endswith('srt') or new_file.lower().endswith('ssa'):
+        new_ext = os.path.splitext(new_file)[1]
+        if new_ext not in _sub_extensions:
             # only apply to subtitles
             continue
         filename = extract_name(filepath)
+        new_file_dirpath = os.path.join(os.path.dirname(filename), new_file)
 
         try:
-           if os.path.exists(filename + '.srt') or os.path.exists(filename + '.ssa'):
+           if os.path.exists(filename + new_ext):
                continue
            else:
-               os.rename(new_file, filename + '.srt')
+               os.rename(new_file_dirpath, filename + new_ext)
         
         except OSError as e:
               print(e)
@@ -621,19 +625,26 @@ def main():
     
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
+      global ARGS_PATH
+      ARGS_PATH = args.path
     else:
         logger.error(f'No file or folder were found for: "{args.path}"')
         sys.exit(1)
-    
+
+    exists_sub = False
     for filepath in cursor.findFiles():
         # skip if a subtitle for this file exists
-        sub_file = os.path.splitext(filepath)[0] + '.srt'
-        if os.path.exists(sub_file):
-            if args.force:
-                os.remove(sub_file)
-            else:
-                logger.info(f'Subtitle already exits use -f for force downloading')
-                continue
+        sub_file = os.path.splitext(filepath)[0]
+        for ext in _sub_extensions:
+            if os.path.exists(sub_file + ext):
+                if args.force:
+                   os.remove(sub_file + ext)
+                else:
+                    exists_sub = True
+    
+        if exists_sub:
+            logger.info(f'Subtitle already exits use -f for force downloading')
+            continue
 
         filename = os.path.basename(filepath)
         
@@ -664,7 +675,7 @@ def main():
             url = None
         if (url is not None):
             with subtitle_renamer(filepath):
-                 get_subtitle(url, 'temp__' + filename )
+                 get_subtitle(url)
 
 
 if __name__ == '__main__':
