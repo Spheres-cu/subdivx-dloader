@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.3 (2024-06-21)
+------------------
+- Update CLI
+
 1.6.2 (2024-06-19)
 ------------------
 - Fixed extract and rename subtitles
