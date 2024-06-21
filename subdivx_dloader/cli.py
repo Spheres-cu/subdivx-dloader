@@ -60,7 +60,7 @@ headers={"user-agent" :
 s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', headers=headers, ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
@@ -110,6 +110,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             headers=headers,
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
+            redirect=False,
             timeout=15.0
         ).data
 
@@ -276,7 +277,7 @@ def get_subtitle(url):
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
 
             zip_file = ZipFile(temp_file)
-            # In case of existence of various subtitles choice vich download
+            # In case of existence of various subtitles choose which to download
             if len(zip_file.infolist()) > 1 :
                 clean_screen()
                 console = Console()
@@ -525,7 +526,7 @@ def stor_Cookie(sdx_cookie):
     logger.debug('Store cookie')
     
 def load_Cookie():
-    """ Load stored sdx cookies return ``None`` if not exist"""
+    """ Load stored sdx cookies return ``None`` if not exists"""
     temp_dir = tempfile.gettempdir()
     cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
     if os.path.exists(cookiesdx_path):
@@ -698,10 +699,10 @@ def main():
         except NoResultsError as e:
             logger.error(str(e))
             url = None
+
         if (url is not None):
             with subtitle_renamer(filepath):
                  get_subtitle(url)
-
 
 if __name__ == '__main__':
     main()
