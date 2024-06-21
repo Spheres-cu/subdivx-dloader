@@ -57,10 +57,10 @@ NC='\033[0m' # No Color
 headers={"user-agent" : 
          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
 
-s = urllib3.PoolManager(headers=headers, ca_certs=certifi.where())
+s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', headers=headers, ca_certs=certifi.where())
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers,  cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
 
 class NoResultsError(Exception):
     pass
@@ -101,6 +101,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     buscar = f"{title} {number}"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
+    sEcho = "0"
+
     try:
         page = s.request(
             'POST',
@@ -108,6 +110,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             headers=headers,
             fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
             retries=False,
+            redirect=False,
             timeout=15.0
         ).data
 
@@ -130,7 +133,12 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         logger.error(f"HTTP error encountered: {e}")
 
     try:
-       soup = json.loads(page).get('aaData')
+        sEcho = json.loads(page).get('sEcho')
+        if sEcho == "0" :
+            raise NoResultsError(f'Not cookies found or expired, please repeat the search')
+        else:
+            soup = json.loads(page).get('aaData')
+
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
 
@@ -267,7 +275,8 @@ def get_subtitle(url):
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
 
             zip_file = ZipFile(temp_file)
-            # In case of existence of various subtitles choice vich download
+
+            # In case of existence of various subtitles choose which to download
             if len(zip_file.infolist()) > 1 :
                 clean_screen()
                 console = Console()
@@ -459,19 +468,16 @@ def highlight_text(text,  metadata):
         if keyword.lower() in text.lower():
             Match_keyword = re.search(keyword, text, re.IGNORECASE).group(0)
             highlighted = highlighted.replace(f'{Match_keyword}', f'{"[white on green4]" + Match_keyword + "[default on default]"}', 1)
-            logger.debug(f'Highlighted keywords: {Match_keyword}')
 
     for quality in metadata.quality:
         if quality.lower() in text.lower():
             Match_quality = re.search(quality, text, re.IGNORECASE).group(0)
             highlighted = highlighted.replace(f'{Match_quality}', f'{"[white on green4]" + Match_quality + "[default on default]"}', 1)
-            logger.debug(f'Highlighted quality: {Match_quality}')
 
     for codec in metadata.codec:
         if codec.lower() in text.lower():
             Match_codec = re.search(codec, text, re.IGNORECASE).group(0)
             highlighted = highlighted.replace (f'{Match_codec}', f'{"[white on green4]" + Match_codec + "[default on default]"}', 1)
-            logger.debug(f'Highlighted codec: {Match_codec}')
     
     return highlighted
 
@@ -485,7 +491,6 @@ def check_Cookie_Status():
         stor_Cookie(cookie)
         cookie = load_Cookie()
         logger.debug('Cookie Loaded')
-        logger.error(f'Not cookies found or expired, please repeat the search')
 
     return cookie
 
@@ -496,7 +501,7 @@ def exp_time_Cookie():
     cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
     csdx_ti_m = datetime.fromtimestamp(os.path.getmtime(cookiesdx_path))
     delta_csdx = datetime.now() - csdx_ti_m
-    exp_c_time = timedelta(hours=12)
+    exp_c_time = timedelta(hours=24)
 
     if delta_csdx > exp_c_time:
             return True 
@@ -520,7 +525,7 @@ def stor_Cookie(sdx_cookie):
     logger.debug('Store cookie')
     
 def load_Cookie():
-    """ Load stored sdx cookies return ``None`` if not exist"""
+    """ Load stored sdx cookies return ``None`` if not exists"""
     temp_dir = tempfile.gettempdir()
     cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
     if os.path.exists(cookiesdx_path):
@@ -548,7 +553,6 @@ def extract_meta_data(filename, kword):
     if (kword):
         keywords = keywords + kword.split(' ')
     return Metadata(keywords, quality, codec)
-
 
 @contextmanager
 def subtitle_renamer(filepath):
@@ -673,6 +677,7 @@ def main():
         except NoResultsError as e:
             logger.error(str(e))
             url = None
+
         if (url is not None):
             with subtitle_renamer(filepath):
                  get_subtitle(url)
