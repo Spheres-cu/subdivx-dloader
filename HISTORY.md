@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.5 (2024-06-24)
+------------------
+- Reformatted code for get_subtitles.
+
 1.6.4 (2024-06-23)
 ------------------
 - New backoff algorithm to avoid repeat search.
