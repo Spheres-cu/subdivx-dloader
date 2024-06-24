@@ -321,12 +321,12 @@ def get_subtitle(url):
                 if res == count:
                     for sub in list_sub:
                         if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
-                            logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
+                            logger.debug(' '.join(['Decompressing subtitle:', sub, 'to', os.path.dirname(ARGS_PATH)]))
                             compressed_sub_file.extract(sub, os.path.dirname(ARGS_PATH))
                     compressed_sub_file.close()
                 else:
                     if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
+                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
                         compressed_sub_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
                     compressed_sub_file.close()
                 logger.info(f"Done extract subtitles!")
@@ -334,7 +334,7 @@ def get_subtitle(url):
                 for name in compressed_sub_file.infolist():
                     # don't unzip stub __MACOSX folders
                     if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
-                        logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
+                        logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
                         compressed_sub_file.extract(name, os.path.dirname(ARGS_PATH))
                 compressed_sub_file.close()
                 logger.info(f"Done extract subtitle!")
