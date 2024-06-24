@@ -280,13 +280,14 @@ def get_subtitle(url):
         temp_file.seek(0)
 
         # Checking if the file is zip or rar then decompress
-        if is_zipfile(temp_file.name):
+        compressed_sub_file = ZipFile(temp_file) if is_zipfile(temp_file.name) else RarFile(temp_file) if is_rarfile(temp_file.name) else None
+
+        if compressed_sub_file is not None:
             SUCCESS = True
             logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
 
-            zip_file = ZipFile(temp_file)
             # In case of existence of various subtitles choose which to download
-            if len(zip_file.infolist()) > 1 :
+            if len(compressed_sub_file.infolist()) > 1 :
                 clean_screen()
                 console = Console()
                 count = 0
@@ -295,7 +296,7 @@ def get_subtitle(url):
                               header_style="bold yellow", show_lines=True, title_justify='center')
                 table.add_column("#", justify="center", vertical="middle", style="bold green")
                 table.add_column("Subtítulo", justify="center" , no_wrap=True)
-                for i in zip_file.infolist():
+                for i in compressed_sub_file.infolist():
                     list_sub.append(i.filename)
                     table.add_row(str(count), str(i.filename))
                     count += 1
@@ -321,84 +322,23 @@ def get_subtitle(url):
                     for sub in list_sub:
                         if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
                             logger.debug(' '.join(['Unpacking zip file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
-                            zip_file.extract(sub, os.path.dirname(ARGS_PATH))
-                    zip_file.close()
+                            compressed_sub_file.extract(sub, os.path.dirname(ARGS_PATH))
+                    compressed_sub_file.close()
                 else:
                     if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
                         logger.debug(' '.join(['Unpacking zip file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
-                        zip_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
-                    zip_file.close()
+                        compressed_sub_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
+                    compressed_sub_file.close()
                 logger.info(f"Done extract subtitles!")
             else:
-                for name in zip_file.infolist():
+                for name in compressed_sub_file.infolist():
                     # don't unzip stub __MACOSX folders
                     if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
                         logger.debug(' '.join(['Unpacking zip file subtitle', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
-                        zip_file.extract(name, os.path.dirname(ARGS_PATH))
-                zip_file.close()
+                        compressed_sub_file.extract(name, os.path.dirname(ARGS_PATH))
+                compressed_sub_file.close()
                 logger.info(f"Done extract subtitle!")
 
-            break
-
-        elif (is_rarfile(temp_file.name)):
-            SUCCESS = True
-            logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
-            logger.info('Decompressing files')
-            rar_file = RarFile(temp_file)
-            # Check for existence of various subtitles
-            ### TODO: ###
-            # -Extract files without folder with '-e' parameter
-            if len(rar_file.infolist()) > 1:
-                clean_screen()
-                console = Console()
-                count = 0
-                list_sub = []
-                table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
-                              header_style="bold yellow", show_lines=True, title_justify='center')
-                table.add_column("#", justify="center", vertical="middle", style="bold green")
-                table.add_column("Subtítulo", justify="center" , no_wrap=True)
-                for i in rar_file.namelist():
-                    list_sub.append(i)
-                    table.add_row(str(count), i)
-                    count += 1
-                console.print(table)
-                print("\n" + BGreen + ">> [" + str(count) + "] Descargar todos" + NC )
-                print("\n" + Red + ">> [" + str(count+1) + "] Cancelar descarga\n" + NC )
-                res = -1
-                while (res < 0 or res > count + 1):
-                    try:
-                       res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow + "]: " + NC) or "0")
-                    except:
-                        res = -1
-                if (res == count + 1):
-                    logger.debug('Canceled Download Subtitle')
-                    print(BRed + "\n Cancelando descarga..." + NC)
-                    temp_file.close()
-                    os.unlink(temp_file.name)
-                    time.sleep(2)
-                    clean_screen()
-                    sys.exit(0)
-                logger.info('Decompressing files')
-                if res == count:
-                    for sub in list_sub:
-                        if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
-                            logger.debug(' '.join(['Unpacking rar file subtitle', sub, 'to', os.path.dirname(ARGS_PATH)]))
-                            rar_file.extract(sub, os.path.dirname(ARGS_PATH))
-                    rar_file.close()
-                    logger.info(f"Done extract subtitles!")
-                else:
-                    if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
-                        rar_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
-                        logger.info(f"Done extract subtitle!")
-                    rar_file.close()
-            else:
-                for name in rar_file.namelist():
-                    if any(name.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name:
-                        logger.debug(' '.join(['Unpacking rar file subtitle', name, 'to', os.path.dirname(ARGS_PATH)]))
-                        rar_file.extract(name, os.path.dirname(ARGS_PATH))
-                rar_file.close()
-                logger.info(f"Done extract subtitle!")
             break
         else:
             SUCCESS = False
@@ -703,7 +643,7 @@ def main():
                 if info["type"] == "movie" :
                   title = info["title"] 
                 else:
-                    title=f"{info['title']} ({info['year']})" if "year" in info  else info['title']
+                    title=f"{info['title']} ({info['year']})" if "year" in info else info['title']
             
             url = get_subtitle_url(
                 title, number,
