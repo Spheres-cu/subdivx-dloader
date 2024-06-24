@@ -22,7 +22,7 @@ Also added these features:
 - You can define the title of the show manually (-t) Useful when you have a folder with all the episodes titles, but not the show main title 20210406
 - If no subtitle is available, program will continue for next title (in case you try to download several episodes with one command), also error is cleaner 20211018
 
-Install
+### Install
 -------
 ```
 $ git clone https://github.com/Spheres-cu/subdivx-dloader.git
@@ -34,6 +34,14 @@ python3 -m pip install .
 pip install build
 python3 -m build
 python3 -m pip install ./dist/subdivx_dloader-<version>
+
+```
+
+_Testing mode without install_
+
+```
+Under subdivx_dloader root folder:
+python3 -m subdivx_dloader.cli
 
 ```
 
@@ -54,23 +62,29 @@ pip install certifi
 ```
 
 
-Usage
+### Usage
 -----
 
+```
+usage: subdivx-dloader [-h or --help] [optional arguments] path
 
 ```
-usage: subdivx [-h] [--quiet] [--skip SKIP] [--force] path
+_positional arguments_:
 
-positional arguments:
+```
   path                  file or directory to retrieve subtitles
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --quiet, -q
-  --no-choose, -nc          Download the default match subtitle avaible. Now show all the available subtitle to download is de default behavior
-  --Season, -S          Search for Season 
-  --force, -f           override existing file
-  --keyword -k "<string>" _ Add the <string> to the list of keywords. Keywords are used when you have 
+```
+_optional arguments_:
+
+```
+  -h, --help            show this help message and exit.
+  --quiet, -q           No verbose mode and very quiet. Applies even in verbose mode (-v).
+  --verbose -v          Be in verbose mode.
+  --no-choose, -nc      Download the default match subtitle avaible. Now show all the available subtitle to download is de default behavior.
+  --Season, -S          Search for Season. 
+  --force, -f           override existing file.
+  --keyword -k "<string>" _ Add the <string> to the list of keywords. Keywords are used when you have. 
 
 10 subtitles for a show or movie,and you know in the description there is a keyword for that subtitle.
   Example if rama966 is the creator of the subtitle you want to download, add it to the keyword and the 
