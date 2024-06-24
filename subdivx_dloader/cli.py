@@ -553,6 +553,8 @@ def main():
                         help="file or directory to retrieve subtitles")
     parser.add_argument('--quiet', '-q', action='store_true',
                         default=False, help="No verbose mode")
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        default=False, help="Be in verbose mode")
     parser.add_argument('--no-choose', '-nc', action='store_true',
                         default=False, help="No Choose sub manually")
     parser.add_argument('--Season', '-S', action='store_true',
@@ -564,7 +566,7 @@ def main():
     args = parser.parse_args()
 
     # Setting logger
-    setup_logger(LOGGER_LEVEL)
+    setup_logger(LOGGER_LEVEL if not args.verbose else logging.DEBUG)
 
     logfile = logging.FileHandler(file_log, mode='w', encoding='utf-8')
     logfile.setFormatter(LOGGER_FORMATTER_LONG)
@@ -574,7 +576,7 @@ def main():
     if not args.quiet:
         console = logging.StreamHandler()
         console.setFormatter(LOGGER_FORMATTER_SHORT)
-        console.setLevel(logging.INFO)
+        console.setLevel(logging.INFO if not args.verbose else logging.DEBUG)
         logger.addHandler(console)
     
     # Setting cookies
