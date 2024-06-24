@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.6 (2024-06-24)
+------------------
+- Added Be in verbose mode.
+
 1.6.5 (2024-06-24)
 ------------------
 - Reformatted code for get_subtitles.
