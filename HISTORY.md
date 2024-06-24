@@ -1,13 +1,29 @@
 Changelog
 =========
 
+1.6.6 (2024-06-24)
+------------------
+- Added Be in verbose mode.
+
+1.6.5 (2024-06-24)
+------------------
+- Reformatted code for get_subtitles.
+
+1.6.4 (2024-06-23)
+------------------
+- New backoff algorithm to avoid repeat search.
+
+1.6.3 (2024-06-21)
+------------------
+- Update CLI
+
 1.6.2 (2024-06-19)
 ------------------
 - Fixed extract and rename subtitles
 
-1.6.1 (2024-06-19)
+1.6.1 (2024-06-18)
 ------------------
-- Fixed extract and rename subtitles
+- Update CLI
 
 1.6.0 (2024-06-17)
 ------------------
