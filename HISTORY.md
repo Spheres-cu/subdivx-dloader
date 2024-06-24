@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.4 (2024-06-23)
+------------------
+- New backoff algorithm to avoid repeat search.
+
 1.6.3 (2024-06-21)
 ------------------
 - Update CLI
