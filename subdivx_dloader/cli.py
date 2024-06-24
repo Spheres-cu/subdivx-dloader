@@ -95,23 +95,20 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
         else the first subtitle is choosen
     """
-    
-    headers['Cookie'] = c_sdx
 
     buscar = f"{title} {number}"
+    headers['Cookie'] = c_sdx
+    fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
+    sEcho = "0"
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
-    sEcho = "0"
-
+    
     try:
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
             headers=headers,
-            fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'},
-            retries=False,
-            redirect=False,
-            timeout=15.0
+            fields=fields
         ).data
 
     except urllib3.exceptions.NewConnectionError:
@@ -131,19 +128,30 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     except urllib3.exceptions.HTTPError as e:
         logger.error(f"HTTP error encountered: {e}")
-    #page = load_aadata()
+
     try:
         sEcho = json.loads(page).get('sEcho')
         if sEcho == "0" :
-            #s = sdx
-            raise NoResultsError(f'Not cookies found or expired, please repeat the search')
+            attempts = 2
+            backoff_factor = 2
+            delay = backoff_delay(backoff_factor, attempts)
+            for _ in range(attempts):
+                time.sleep(delay)
+                page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
+                sEcho = json.loads(page).get('sEcho')
+                if sEcho == 0 :
+                    continue
+                else:
+                    soup = json.loads(page).get('aaData')
+                    break
+            if sEcho == "0":
+                raise NoResultsError(f'Not cookies found or expired, please repeat the search')
         else:
             soup = json.loads(page).get('aaData')
 
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
 
-    #store_aadata(page)
     id_list = list()
     title_list = list()
     description_list = list()
@@ -557,6 +565,11 @@ def load_aadata():
         return None
 
     return sdx_aadata
+
+def backoff_delay(backoff_factor = 2, attempts = 2):
+    # backoff algorithm
+    delay = backoff_factor * (2 ** attempts)
+    return delay
 
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
