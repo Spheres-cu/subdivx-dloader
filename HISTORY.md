@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.8 (2024-06-25)
+------------------
+- Fixed check for subtitles files existence in a folder with ```.``` (search for all video files) ```path``` parameter.
+
 1.6.7 (2024-06-24)
 ------------------
 - Fixed a bug retrieving subtitles based in descriptions in search by season.
