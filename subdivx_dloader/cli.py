@@ -612,9 +612,9 @@ def main():
         logger.error(f'No file or folder were found for: "{args.path}"')
         sys.exit(1)
 
-    exists_sub = False
     for filepath in cursor.findFiles():
         # skip if a subtitle for this file exists
+        exists_sub = False
         sub_file = os.path.splitext(filepath)[0]
         for ext in _sub_extensions:
             if os.path.exists(sub_file + ext):
@@ -622,6 +622,7 @@ def main():
                    os.remove(sub_file + ext)
                 else:
                     exists_sub = True
+                    break
     
         if exists_sub:
             logger.info(f'Subtitle already exits use -f for force downloading')
