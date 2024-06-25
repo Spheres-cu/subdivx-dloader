@@ -178,7 +178,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     descriptions = {
-         description_list[i]: [id_list[i], title_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles)
+         id_list[i]: [description_list[i], title_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles)
           if match_text(buscar, t)
     }
    
@@ -188,17 +188,17 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     # then find the best result looking for metadata keywords
     # in the description
     scores = []
-    for description in descriptions:
+    for description in descriptions.values():
 
         score = 0
         for keyword in metadata.keywords:
-            if keyword.lower() in description:
+            if keyword.lower() in description[0]:
                 score += 1
         for quality in metadata.quality:
-            if quality.lower() in description:
+            if quality.lower() in description[0]:
                 score += .25
         for codec in metadata.codec:
-            if codec.lower() in description:
+            if codec.lower() in description[0]:
                 score += .50
         scores.append(score)
 
@@ -222,9 +222,9 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         url_ids = []
         for item in (results):
             try:
-                descripcion = tr.fill(highlight_text(item[0][0], metadata), width=77)
+                url_ids.append(item[0][0])
                 detalles = item[0]
-                url_ids.append(detalles[1][0])
+                descripcion = tr.fill(highlight_text(detalles[1][0], metadata), width=77)
                 titulo = str(detalles[1][1])
                 descargas = str(detalles[1][2])
                 usuario = str(detalles[1][3])
