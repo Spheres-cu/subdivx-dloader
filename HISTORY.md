@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.7 (2024-06-24)
+------------------
+- Fixed a bug retrieving subtitles based in descriptions in search by season.
+
 1.6.6 (2024-06-24)
 ------------------
 - Added Be in verbose mode.
