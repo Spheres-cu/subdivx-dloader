@@ -57,10 +57,13 @@ NC='\033[0m' # No Color
 headers={"user-agent" : 
          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
 
-s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
+s = urllib3.PoolManager(headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=10)
 
-#Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where())
+# Proxy: You must modify this configuration depending on the Proxy you use
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=10)
+
+# mitmproxy test
+#s = urllib3.ProxyManager('http://127.0.0.1:8080/', num_pools=1, headers=headers, retries=False, timeout=10)
 
 class NoResultsError(Exception):
     pass
@@ -97,7 +100,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     """
 
     buscar = f"{title} {number}"
-    headers['Cookie'] = c_sdx
     fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
     sEcho = "0"
     print("\r")
@@ -127,7 +129,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         sys.exit(1)
 
     except urllib3.exceptions.HTTPError as e:
-        logger.error(f"HTTP error encountered: {e}")
+        logger.error(f'HTTP error encountered: {e}')
+        exit(1)
 
     try:
         sEcho = json.loads(page).get('sEcho')
@@ -136,6 +139,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             backoff_factor = 2
             delay = backoff_delay(backoff_factor, attempts)
             for _ in range(attempts):
+                logger.debug(f'Attempts #: {_}')
                 time.sleep(delay)
                 page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
                 sEcho = json.loads(page).get('sEcho')
@@ -600,10 +604,8 @@ def main():
         logger.addHandler(console)
     
     # Setting cookies
-    global c_sdx
-    c_sdx = None
-    c_sdx = check_Cookie_Status()
-    
+    headers['Cookie'] = check_Cookie_Status()
+   
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
       global ARGS_PATH
