@@ -60,7 +60,7 @@ headers={"user-agent" :
 s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
 
 # Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=10)
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
 
 # mitmproxy test
 #s = urllib3.ProxyManager('http://127.0.0.1:8080/', num_pools=1, headers=headers, retries=False, timeout=15)
@@ -153,22 +153,20 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             if sEcho == "0":
                 raise NoResultsError(f'Not cookies found or expired, please repeat the search')
         else:
-            soup = json.loads(page).get('aaData')
-
-    except JSONDecodeError:
-        raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
-    try:
-        #page = load_aadata()
-        json_aaData = json.loads(page)['aaData']
+            json_aaData = json.loads(page).get('aaData')
+    
     except JSONDecodeError as msg:
+        logger.debug(f'Error JSONDecodeError: "{msg}"')
         raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
+        
+        #page = load_aadata()
     
     # Checking Json Data Items
     aaData_Items = get_Json_Dict_list(json_aaData)
     
     if aaData_Items is not None:
         # Cleaning Items
-        list_Subs_Dicts = Clean_list_subs(aaData_Items)
+        list_Subs_Dicts = clean_list_subs(aaData_Items)
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
@@ -533,10 +531,11 @@ def get_Json_Dict_list(Json_data):
             list_of_dicts = Json_data
     else:
         return None
+    
     return list_of_dicts
 
-def Clean_list_subs(list_dict_subs):
-    """ Clean not used Items from list of  subtitles  dictionarys ``list_dict_subs``
+def clean_list_subs(list_dict_subs):
+    """ Clean not used Items from list of subtitles dictionarys ``list_dict_subs``
         
         Convert to datetime Items ``fecha_subida``
     """
