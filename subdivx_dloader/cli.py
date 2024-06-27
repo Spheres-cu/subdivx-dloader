@@ -57,13 +57,13 @@ NC='\033[0m' # No Color
 headers={"user-agent" : 
          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
 
-s = urllib3.PoolManager(headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=10)
+s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
 
 # Proxy: You must modify this configuration depending on the Proxy you use
 #s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=10)
 
 # mitmproxy test
-#s = urllib3.ProxyManager('http://127.0.0.1:8080/', num_pools=1, headers=headers, retries=False, timeout=10)
+#s = urllib3.ProxyManager('http://127.0.0.1:8080/', num_pools=1, headers=headers, retries=False, timeout=15)
 
 class NoResultsError(Exception):
     pass
@@ -129,24 +129,26 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         sys.exit(1)
 
     except urllib3.exceptions.HTTPError as e:
-        logger.error(f'HTTP error encountered: {e}')
+        error = e.__str__().split(":")
+        msg_error = error[1] + ', ' + error[3]
+        logger.error(f'HTTP error encountered: {msg_error}')
         exit(1)
 
     try:
-        sEcho = json.loads(page).get('sEcho')
+        sEcho = json.loads(page)['sEcho']
         if sEcho == "0" :
             attempts = 2
             backoff_factor = 2
             delay = backoff_delay(backoff_factor, attempts)
             for _ in range(attempts):
-                logger.debug(f'Attempts #: {_}')
+                logger.debug(f'Request Attempts #: {_}')
                 time.sleep(delay)
                 page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
-                sEcho = json.loads(page).get('sEcho')
+                sEcho = json.loads(page)['sEcho']
                 if sEcho == 0 :
                     continue
                 else:
-                    soup = json.loads(page).get('aaData')
+                    json_aaData = json.loads(page)['aaData']
                     break
             if sEcho == "0":
                 raise NoResultsError(f'Not cookies found or expired, please repeat the search')
@@ -155,44 +157,36 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
 
     except JSONDecodeError:
         raise NoResultsError(f'Not suitable subtitles were found for: "{buscar}"')
-
-    id_list = list()
-    title_list = list()
-    description_list = list()
-    download_list = list()
-    user_list = list()
-    date_list = list()
-
-    for key in soup:
-        id_list.append(key['id'])
-        title_list.append(key['titulo'])
-        description_list.append(key['descripcion'])
-        download_list.append(key['descargas'])
-        user_list.append(key['nick'])
-
-        # Format date (year/month/day HH:MM)
-        match = re.search(r'(\d+-\d+-\d+\s+\d+:\d+)', str(key['fecha_subida']))
-        if (match is None):
-            date_list.append('--- --')
-        else:
-            date_list.append(match.group(1).replace("-", "/"))
-
-    titles = title_list
-
+    try:
+        #page = load_aadata()
+        json_aaData = json.loads(page)['aaData']
+    except JSONDecodeError as msg:
+        raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
+    
+    # Checking Json Data Items
+    aaData_Items = get_Json_Dict_list(json_aaData)
+    
+    if aaData_Items is not None:
+        # Cleaning Items
+        list_Subs_Dicts = Clean_list_subs(aaData_Items)
+    else:
+        raise NoResultsError(f'No suitable data were found for: "{buscar}"')
+    
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
-    descriptions = {
-         id_list[i]: [description_list[i], title_list[i], download_list[i], user_list[i], date_list[i]] for i, t in enumerate(titles)
-          if match_text(buscar, t)
+    
+    filtered_list_Subs_Dicts = {
+        subs_dict['id']: [subs_dict['descripcion'], subs_dict['titulo'], subs_dict['descargas'], subs_dict['nick'], subs_dict['fecha_subida']] for subs_dict in list_Subs_Dicts
+        if match_text(buscar, subs_dict['titulo'])
     }
-   
-    if not descriptions:
+
+    if not filtered_list_Subs_Dicts:
         raise NoResultsError(f'No suitable subtitles were found for: "{buscar}"')
 
     # then find the best result looking for metadata keywords
     # in the description
     scores = []
-    for description in descriptions.values():
+    for description in filtered_list_Subs_Dicts.values():
 
         score = 0
         for keyword in metadata.keywords:
@@ -206,8 +200,8 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
                 score += .50
         scores.append(score)
 
-    results = sorted(zip(descriptions.items(), scores), key=lambda item: item[1], reverse=True)
-
+    results = sorted(zip(filtered_list_Subs_Dicts.items(), scores), key=lambda item: item[1], reverse=True)
+  
     # Print subtitles search infos
     # Construct Table for console output
     
@@ -515,6 +509,47 @@ def backoff_delay(backoff_factor = 2, attempts = 2):
     delay = backoff_factor * (2 ** attempts)
     return delay
 
+def convert_datetime(string_datetime:str):
+    """
+       Convert ``string_datetime`` in a datetime obj then format it to "%d/%m/%Y %H:%M"
+
+       Return ``--- --`` if not invalid datetime string
+    """
+    
+    try:
+        date_obj = datetime.strptime(string_datetime, '%Y-%m-%d %H:%M:%S').date()
+        time_obj = datetime.strptime(string_datetime, '%Y-%m-%d %H:%M:%S').time()
+        date_time_str = datetime.combine(date_obj, time_obj).strftime('%d/%m/%Y %H:%M')
+    except ValueError as e:
+        logger.debug(f'Value Error parsing: {e}')
+        return "--- --"
+    return date_time_str
+
+def get_Json_Dict_list(Json_data):
+    """ Checking if the JSON Data is a list of subtitles dictionary """
+
+    if isinstance(Json_data, list) and all(isinstance(item, dict)  
+        for item in Json_data):  
+            list_of_dicts = Json_data
+    else:
+        return None
+    return list_of_dicts
+
+def Clean_list_subs(list_dict_subs):
+    """ Clean not used Items from list of  subtitles  dictionarys ``list_dict_subs``
+        
+        Convert to datetime Items ``fecha_subida``
+    """
+    erase_list_Item_Subs = ['cds', 'idmoderador', 'eliminado', 'id_subido_por', 'framerate', 'comentarios', 'formato', 'promedio', 'pais']
+
+    for dictionary in list_dict_subs:
+        for i in erase_list_Item_Subs:
+            del dictionary[i]
+    
+        dictionary['fecha_subida'] = convert_datetime(str(dictionary['fecha_subida']))
+
+    return list_dict_subs
+        
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos""" 
