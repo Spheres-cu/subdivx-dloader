@@ -148,7 +148,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             if sEcho == "0":
                 raise NoResultsError(f'Not cookies found or expired, please repeat the search')
         else:
-            json_aaData = json.loads(page).get('aaData')
+            json_aaData = json.loads(page)['aaData']
     
     except JSONDecodeError as msg:
         logger.debug(f'Error JSONDecodeError: "{msg}"')
