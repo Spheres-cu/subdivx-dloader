@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.6.9 (2024-06-27)
+------------------
+- Refactoring CLI code
+
 1.6.8 (2024-06-25)
 ------------------
 - Fixed check for subtitles files existence in a folder with ```.``` (search for all video files) ```path``` parameter.
