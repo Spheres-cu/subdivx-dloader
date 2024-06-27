@@ -55,7 +55,7 @@ NC='\033[0m' # No Color
 
 # Configure connections
 headers={"user-agent" : 
-         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36 RuxitSynthetic/1.0"}
+         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"}
 
 s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
 
@@ -80,13 +80,8 @@ def setup_logger(level):
     global logger
 
     logger = logging.getLogger(__name__)
-    """
-    logfile = logging.handlers.RotatingFileHandler(logger.name+'.log', maxBytes=1000 * 1024, backupCount=9)
-    logfile.setFormatter(LOGGER_FORMATTER)
-    logger.addHandler(logfile)
-    """
-    logger.setLevel(level)
 
+    logger.setLevel(level)
 
 def get_subtitle_url(title, number, metadata, no_choose=True):
     
