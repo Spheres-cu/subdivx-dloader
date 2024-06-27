@@ -92,7 +92,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     """
     
     buscar = f"{title} {number}"
-    headers['Cookie'] = c_sdx
     fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
     sEcho = "0"
     print("\r")
@@ -607,9 +606,7 @@ def main():
         logger.addHandler(console)
     
     # Setting cookies
-    global c_sdx
-    c_sdx = None
-    c_sdx = check_Cookie_Status()
+    headers['Cookie'] = check_Cookie_Status()
     
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
