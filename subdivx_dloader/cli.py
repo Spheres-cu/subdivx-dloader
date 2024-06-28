@@ -407,7 +407,7 @@ def match_text(pattern, text):
   re_full_pattern = re.compile(rf"\b{re.escape(pattern)}\b", re.I)
   re_pattern_last_part = re.compile(rf'\b{re.escape(initial_pattern)}.*$', re.I)
 
-  # Performe searchs
+  # Perform searchs
   r = True if re_pattern_initial.search(text.strip()) and re_pattern_final.search(text) else False
   logger.debug(f'Text: {text} Found: {r}')
 
@@ -415,10 +415,10 @@ def match_text(pattern, text):
       r = True if re_full_pattern.search(text) else False
       logger.debug(f'FullMatch text: {pattern}: {r}')
 
-    #   if not r :
-    #       r = True if re_pattern_last_part.search(text.strip()) else False
-    #       pattern_last = re_pattern_last_part.search(text.strip()).group(0) if r else final_pattern
-    #       logger.debug(f'FullMatch pattern last: {pattern_last}: {r}')
+      if not r :
+          r = True if re_pattern_last_part.search(text.strip()) else False
+          pattern_last = re_pattern_last_part.search(text.strip()).group(0) if r else final_pattern
+          logger.debug(f'FullMatch pattern last: {pattern_last}: {r}')
  
   return r 
 
