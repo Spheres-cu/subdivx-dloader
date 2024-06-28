@@ -153,8 +153,9 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     except JSONDecodeError as msg:
         logger.debug(f'Error JSONDecodeError: "{msg}"')
         raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
-        
-        #page = load_aadata()
+    
+    # For testing
+    #store_aadata(page)
     
     # Checking Json Data Items
     aaData_Items = get_Json_Dict_list(json_aaData)
@@ -165,6 +166,17 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
+    """" ####### For testing ########## 
+    page = load_aadata()
+    aaData = json.loads(page)['aaData']
+    aaData_Items = get_Json_Dict_list(aaData)
+
+    if aaData_Items is not None:
+         list_Subs_Dicts = clean_list_subs(aaData_Items)
+    else:
+        raise NoResultsError(f'No suitable data were found for: "{buscar}"')
+   
+    """  ##### For testing ######### """
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     
@@ -375,25 +387,38 @@ Metadata = namedtuple('Metadata', 'keywords quality codec')
 
 def match_text(pattern, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
+
   #Remove specials chars
   special_char = ["`", "'", "´", ":", ".", "?"]
   for i in special_char:
       pattern = pattern.replace(i, '')
       text = text.replace(i, '')
 
+  # Setting Patterns
   list_pattern = []
   list_pattern = pattern.split(" ")
+  initial_pattern = list_pattern[0]
+  final_pattern = list_pattern[-1]
+  #full_pattern_without_number = re.sub(re.escape(final_pattern), '', pattern, count=1, flags=re.I)
 
-  re_pattern_initial = re.compile(rf"^{re.escape(list_pattern[0])}", re.IGNORECASE)
-  re_pattern_final = re.compile(rf"{re.escape(list_pattern[len(list_pattern) - 1])}.*$", re.IGNORECASE)
-  re_full_pattern =re.compile(rf"\b{re.escape(pattern)}\b", re.IGNORECASE)
+  # Setting searchs Patterns
+  re_pattern_initial = re.compile(rf"^{re.escape(initial_pattern)}", re.I)
+  re_pattern_final = re.compile(rf"{re.escape(final_pattern)}.*$", re.I)
+  re_full_pattern = re.compile(rf"\b{re.escape(pattern)}\b", re.I)
+  re_pattern_last_part = re.compile(rf'\b{re.escape(initial_pattern)}.*$', re.I)
 
+  # Performe searchs
   r = True if re_pattern_initial.search(text.strip()) and re_pattern_final.search(text) else False
   logger.debug(f'Text: {text} Found: {r}')
 
   if not r :
-      r = True if re_full_pattern.search(text) is not None else False
-      logger.debug(f'FullMatch: {text}: {r}')
+      r = True if re_full_pattern.search(text) else False
+      logger.debug(f'FullMatch text: {pattern}: {r}')
+
+    #   if not r :
+    #       r = True if re_pattern_last_part.search(text.strip()) else False
+    #       pattern_last = re_pattern_last_part.search(text.strip()).group(0) if r else final_pattern
+    #       logger.debug(f'FullMatch pattern last: {pattern_last}: {r}')
  
   return r 
 
@@ -508,14 +533,16 @@ def convert_datetime(string_datetime:str):
 
        Return ``--- --`` if not invalid datetime string
     """
-    
+
     try:
         date_obj = datetime.strptime(string_datetime, '%Y-%m-%d %H:%M:%S').date()
         time_obj = datetime.strptime(string_datetime, '%Y-%m-%d %H:%M:%S').time()
         date_time_str = datetime.combine(date_obj, time_obj).strftime('%d/%m/%Y %H:%M')
+
     except ValueError as e:
-        logger.debug(f'Value Error parsing: {e}')
+        logger.debug(f'Value Error parsing: {string_datetime} Error: {e}')
         return "--- --"
+    
     return date_time_str
 
 def get_Json_Dict_list(Json_data):
