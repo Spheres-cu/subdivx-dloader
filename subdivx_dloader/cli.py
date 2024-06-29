@@ -83,7 +83,7 @@ def setup_logger(level):
 
     logger.setLevel(level)
 
-def get_subtitle_url(title, number, metadata, no_choose=True):
+def get_subtitle_url(title, number, metadata, no_choose, season):
     
     """Get a page with a list of subtitles searched by ``title`` and season/episode
         ``number`` of series or movies.
@@ -100,7 +100,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     
-    try:
+    """try:
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
@@ -164,9 +164,9 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
         # Cleaning Items
         list_Subs_Dicts = clean_list_subs(aaData_Items)
     else:
-        raise NoResultsError(f'No suitable data were found for: "{buscar}"')
+        raise NoResultsError(f'No suitable data were found for: "{buscar}"') """
     
-    """" ####### For testing ########## 
+    """" ####### For testing ########## """
     page = load_aadata()
     aaData = json.loads(page)['aaData']
     aaData_Items = get_Json_Dict_list(aaData)
@@ -182,7 +182,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     
     filtered_list_Subs_Dicts = {
         subs_dict['id']: [subs_dict['descripcion'], subs_dict['titulo'], subs_dict['descargas'], subs_dict['nick'], subs_dict['fecha_subida']] for subs_dict in list_Subs_Dicts
-        if match_text(buscar, subs_dict['titulo'])
+        if match_text(title, number, season, subs_dict['titulo'])
     }
 
     if not filtered_list_Subs_Dicts:
@@ -267,7 +267,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       logger.debug(f"Getting url from: {url}")
       return url
 
-def get_subtitle(url):
+def get_subtitle(url, topath):
     """Download subtitles from ``url`` to a destination ``path``"""
     
     temp_file = NamedTemporaryFile(delete=False)
@@ -324,21 +324,21 @@ def get_subtitle(url):
                 if res == count:
                     for sub in list_sub:
                         if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
-                            logger.debug(' '.join(['Decompressing subtitle:', sub, 'to', os.path.dirname(ARGS_PATH)]))
-                            compressed_sub_file.extract(sub, os.path.dirname(ARGS_PATH))
+                            logger.debug(' '.join(['Decompressing subtitle:', sub, 'to', os.path.dirname(topath)]))
+                            compressed_sub_file.extract(sub, os.path.dirname(topath))
                     compressed_sub_file.close()
                 else:
                     if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
-                        compressed_sub_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
+                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res], 'to', os.path.dirname(topath)]))
+                        compressed_sub_file.extract(list_sub[res], os.path.dirname(topath))
                     compressed_sub_file.close()
                 logger.info(f"Done extract subtitles!")
             else:
                 for name in compressed_sub_file.infolist():
                     # don't unzip stub __MACOSX folders
                     if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
-                        logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
-                        compressed_sub_file.extract(name, os.path.dirname(ARGS_PATH))
+                        logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
+                        compressed_sub_file.extract(name, os.path.dirname(topath))
                 compressed_sub_file.close()
                 logger.info(f"Done extract subtitle!")
 
@@ -385,40 +385,42 @@ _sub_extensions = ['.srt', '.ssa']
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
-def match_text(pattern, text):
+def match_text(title, number, season, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
 
-  #Remove specials chars
+  #Setting Patterns
   special_char = ["`", "'", "´", ":", ".", "?"]
   for i in special_char:
-      pattern = pattern.replace(i, '')
+      title = title.replace(i, '')
       text = text.replace(i, '')
-
-  # Setting Patterns
-  list_pattern = []
-  list_pattern = pattern.split(" ")
-  initial_pattern = list_pattern[0]
-  final_pattern = list_pattern[-1]
-  #full_pattern_without_number = re.sub(re.escape(final_pattern), '', pattern, count=1, flags=re.I)
-
+ 
   # Setting searchs Patterns
-  re_pattern_initial = re.compile(rf"^{re.escape(initial_pattern)}", re.I)
-  re_pattern_final = re.compile(rf"{re.escape(final_pattern)}.*$", re.I)
-  re_full_pattern = re.compile(rf"\b{re.escape(pattern)}\b", re.I)
-  re_pattern_last_part = re.compile(rf'\b{re.escape(initial_pattern)}.*$', re.I)
+  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{re.escape(number)}.*$", re.I)
+  re_title_pattern = re.compile(rf"\b{re.escape(title)}\b", re.I)
 
   # Perform searchs
-  r = True if re_pattern_initial.search(text.strip()) and re_pattern_final.search(text) else False
-  logger.debug(f'Text: {text} Found: {r}')
+  r = True if re_full_pattern.search(text.strip()) else False
+
+  logger.debug(f'FullMatch text: {text} Found: {r}')
 
   if not r :
-      r = True if re_full_pattern.search(text) else False
-      logger.debug(f'FullMatch text: {pattern}: {r}')
+    rtitle = True if re_title_pattern.search(text.strip()) else False
+    logger.debug(f'Title Match: {title} Found: {rtitle}')
+    logger.debug(f'Season: {season}')
 
-      if not r :
-          r = True if re_pattern_last_part.search(text.strip()) else False
-          pattern_last = re_pattern_last_part.search(text.strip()).group(0) if r else final_pattern
-          logger.debug(f'FullMatch pattern last: {pattern_last}: {r}')
+    for num in number.split(" "):
+        if not season:
+           rnumber = True if re.search(rf"\b{num}\b", text, re.I) else False
+           logger.debug(f'Movie Number 1: {num}')
+        else:
+           rnumber = True if re.search(rf"\b{num}.*\b", text, re.I) else False
+           logger.debug(f'Movie Number 2: {num}') 
+    
+    logger.debug(f'Number Match: {number} Found: {rnumber}')
+    
+    r = True if rtitle and rnumber else False
+
+    logger.debug(f'Partial Match text: {text}: {r}')
  
   return r 
 
@@ -664,8 +666,8 @@ def main():
    
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
-      global ARGS_PATH
-      ARGS_PATH = args.path
+      #global ARGS_PATH
+      #ARGS_PATH = args.path
     else:
         logger.error(f'No file or folder were found for: "{args.path}"')
         sys.exit(1)
@@ -695,6 +697,8 @@ def main():
             else:
                number = f"({info['year']})" if "year" in info  else  ""
 
+            season = False if info["type"] == "movie" else args.Season
+
             metadata = extract_meta_data(filename, args.keyword)
             #logger.debug(f'Metadata extracted:  {metadata}')
 
@@ -709,14 +713,15 @@ def main():
             url = get_subtitle_url(
                 title, number,
                 metadata,
-                args.no_choose)
+                no_choose=args.no_choose,
+                season=season)
         except NoResultsError as e:
             logger.error(str(e))
             url = None
 
         if (url is not None):
             with subtitle_renamer(filepath):
-                 get_subtitle(url)
+                 get_subtitle(url, topath = args.path)
 
 if __name__ == '__main__':
     main()
