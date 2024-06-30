@@ -83,7 +83,7 @@ def setup_logger(level):
 
     logger.setLevel(level)
 
-def get_subtitle_url(title, number, metadata, no_choose, season):
+def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     
     """Get a page with a list of subtitles searched by ``title`` and season/episode
         ``number`` of series or movies.
@@ -100,7 +100,7 @@ def get_subtitle_url(title, number, metadata, no_choose, season):
     print("\r")
     logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     
-    """try:
+    try:
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
@@ -155,7 +155,7 @@ def get_subtitle_url(title, number, metadata, no_choose, season):
         raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
     
     # For testing
-    #store_aadata(page)
+    # store_aadata(page)
     
     # Checking Json Data Items
     aaData_Items = get_Json_Dict_list(json_aaData)
@@ -164,9 +164,9 @@ def get_subtitle_url(title, number, metadata, no_choose, season):
         # Cleaning Items
         list_Subs_Dicts = clean_list_subs(aaData_Items)
     else:
-        raise NoResultsError(f'No suitable data were found for: "{buscar}"') """
+        raise NoResultsError(f'No suitable data were found for: "{buscar}"') 
     
-    """" ####### For testing ########## """
+    """" ####### For testing ########## 
     page = load_aadata()
     aaData = json.loads(page)['aaData']
     aaData_Items = get_Json_Dict_list(aaData)
@@ -182,7 +182,7 @@ def get_subtitle_url(title, number, metadata, no_choose, season):
     
     filtered_list_Subs_Dicts = {
         subs_dict['id']: [subs_dict['descripcion'], subs_dict['titulo'], subs_dict['descargas'], subs_dict['nick'], subs_dict['fecha_subida']] for subs_dict in list_Subs_Dicts
-        if match_text(title, number, season, subs_dict['titulo'])
+        if match_text(title, number, inf_sub, subs_dict['titulo'])
     }
 
     if not filtered_list_Subs_Dicts:
@@ -385,7 +385,7 @@ _sub_extensions = ['.srt', '.ssa']
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
-def match_text(title, number, season, text):
+def match_text(title, number, inf_sub, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
 
   #Setting Patterns
@@ -393,32 +393,34 @@ def match_text(title, number, season, text):
   for i in special_char:
       title = title.replace(i, '')
       text = text.replace(i, '')
- 
+  aka = "aka"
+  
   # Setting searchs Patterns
-  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{re.escape(number)}.*$", re.I)
+  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I)
   re_title_pattern = re.compile(rf"\b{re.escape(title)}\b", re.I)
 
-  # Perform searchs
+  # Perform searches
   r = True if re_full_pattern.search(text.strip()) else False
-
   logger.debug(f'FullMatch text: {text} Found: {r}')
 
   if not r :
     rtitle = True if re_title_pattern.search(text.strip()) else False
     logger.debug(f'Title Match: {title} Found: {rtitle}')
-    logger.debug(f'Season: {season}')
 
     for num in number.split(" "):
-        if not season:
+        if not inf_sub['season']:
            rnumber = True if re.search(rf"\b{num}\b", text, re.I) else False
-           logger.debug(f'Movie Number 1: {num}')
         else:
            rnumber = True if re.search(rf"\b{num}.*\b", text, re.I) else False
-           logger.debug(f'Movie Number 2: {num}') 
     
     logger.debug(f'Number Match: {number} Found: {rnumber}')
-    
-    r = True if rtitle and rnumber else False
+
+    if inf_sub['type'] == "movie" :
+        raka = True if re.search(rf"\b{aka}\b", text, re.I) else False
+        logger.debug(f'Search Match: aka Found: {raka}')
+        r = True if rtitle and rnumber and raka else False
+    else:
+        r = True if rtitle and rnumber else False
 
     logger.debug(f'Partial Match text: {text}: {r}')
  
@@ -697,8 +699,6 @@ def main():
             else:
                number = f"({info['year']})" if "year" in info  else  ""
 
-            season = False if info["type"] == "movie" else args.Season
-
             metadata = extract_meta_data(filename, args.keyword)
             #logger.debug(f'Metadata extracted:  {metadata}')
 
@@ -709,12 +709,16 @@ def main():
                   title = info["title"] 
                 else:
                     title=f"{info['title']} ({info['year']})" if "year" in info else info['title']
+            inf_sub = {
+                'type': info["type"],
+                'season' : False if info["type"] == "movie" else args.Season
+            }
             
             url = get_subtitle_url(
                 title, number,
                 metadata,
                 no_choose=args.no_choose,
-                season=season)
+                inf_sub=inf_sub)
         except NoResultsError as e:
             logger.error(str(e))
             url = None
