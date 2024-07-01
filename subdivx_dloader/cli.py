@@ -60,7 +60,7 @@ headers={"user-agent" :
 s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
 
 #Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers,  cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), , retries=False, timeout=15)
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers,  cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
 
 class NoResultsError(Exception):
     pass
@@ -80,7 +80,7 @@ def setup_logger(level):
   
     logger.setLevel(level)
 
-def get_subtitle_url(title, number, metadata, no_choose=True):
+def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     
     """Get a page with a list of subtitles searched by ``title`` and season/episode
         ``number`` of series or movies.
@@ -92,7 +92,6 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     """
     
     buscar = f"{title} {number}"
-    headers['Cookie'] = c_sdx
     fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
     sEcho = "0"
     print("\r")
@@ -106,26 +105,11 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
             fields=fields
         ).data
 
-    except urllib3.exceptions.NewConnectionError:
-        print("\n"  + Red + "[Error,", "Failed to establish a new connection!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "- Your Internet connection!")
+    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+        msg = Network_Connection_Error(e)
+        print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
+        logger.error(f'Network Connection Error occurred: {msg}')
         sys.exit(1)
-
-    except urllib3.exceptions.TimeoutError:
-        print("\n"  + Red + "[Error,", "Connection Timeout!]: " + NC + Yellow + "Unable to reach https://www.subdivx.com servers!" + NC + "\n\n" + Yellow + " Please check: " + NC + "\n" + \
-                "- Your Internet connection\n" + \
-                "- Your Firewall connections\n" + \
-                "- www.subdivx.com availability\n")
-        sys.exit(1)
-
-    except urllib3.exceptions.ProxyError:
-        print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
-        sys.exit(1)
-    
-    except urllib3.exceptions.HTTPError as e:
-        error = e.__str__().split(":")
-        msg_error = error[1] + ', ' + error[3]
-        logger.error(f'HTTP error encountered: {msg_error}')
-        exit(1)
 
     try:
         sEcho = json.loads(page)['sEcho']
@@ -166,7 +150,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
     
     filtered_list_Subs_Dicts = {
         subs_dict['id']: [subs_dict['descripcion'], subs_dict['titulo'], subs_dict['descargas'], subs_dict['nick'], subs_dict['fecha_subida']] for subs_dict in list_Subs_Dicts
-        if match_text(buscar, subs_dict['titulo'])
+        if match_text(title, number, inf_sub, subs_dict['titulo'])
     }
 
     if not filtered_list_Subs_Dicts:
@@ -250,7 +234,7 @@ def get_subtitle_url(title, number, metadata, no_choose=True):
       logger.debug(f"Getting url from: {url}")
       return url
 
-def get_subtitle(url):
+def get_subtitle(url, topath):
     """Download subtitles from ``url`` to a destination ``path``"""
     
     temp_file = NamedTemporaryFile(delete=False)
@@ -307,21 +291,21 @@ def get_subtitle(url):
                 if res == count:
                     for sub in list_sub:
                         if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
-                            logger.debug(' '.join(['Decompressing subtitle:', sub, 'to', os.path.dirname(ARGS_PATH)]))
-                            compressed_sub_file.extract(sub, os.path.dirname(ARGS_PATH))
+                            logger.debug(' '.join(['Decompressing subtitle:', sub, 'to', os.path.dirname(topath)]))
+                            compressed_sub_file.extract(sub, os.path.dirname(topath))
                     compressed_sub_file.close()
                 else:
                     if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res], 'to', os.path.dirname(ARGS_PATH)]))
-                        compressed_sub_file.extract(list_sub[res], os.path.dirname(ARGS_PATH))
+                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res], 'to', os.path.dirname(topath)]))
+                        compressed_sub_file.extract(list_sub[res], os.path.dirname(topath))
                     compressed_sub_file.close()
                 logger.info(f"Done extract subtitles!")
             else:
                 for name in compressed_sub_file.infolist():
                     # don't unzip stub __MACOSX folders
                     if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
-                        logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(ARGS_PATH)]))
-                        compressed_sub_file.extract(name, os.path.dirname(ARGS_PATH))
+                        logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
+                        compressed_sub_file.extract(name, os.path.dirname(topath))
                 compressed_sub_file.close()
                 logger.info(f"Done extract subtitle!")
 
@@ -368,27 +352,41 @@ _sub_extensions = ['.srt', '.ssa']
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
-def match_text(pattern, text):
+def match_text(title, number, inf_sub, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
-  #Remove specials chars
+
+  #Setting Patterns
   special_char = ["`", "'", "´", ":", ".", "?"]
   for i in special_char:
-      pattern = pattern.replace(i, '')
+      title = title.replace(i, '')
       text = text.replace(i, '')
+  aka = "aka"
+  
+  # Setting searchs Patterns
+  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I) if inf_sub['type'] == "movie" else re.compile(rf"^{re.escape(title.split()[0])}.*{number}.*$", re.I)
+  re_title_pattern = re.compile(rf"\b{re.escape(title)}\b", re.I)
 
-  list_pattern = []
-  list_pattern = pattern.split(" ")
-
-  re_pattern_initial = re.compile(rf"^{re.escape(list_pattern[0])}", re.IGNORECASE)
-  re_pattern_final = re.compile(rf"{re.escape(list_pattern[len(list_pattern) - 1])}.*$", re.IGNORECASE)
-  re_full_pattern =re.compile(rf"\b{re.escape(pattern)}\b", re.IGNORECASE)
-
-  r = True if re_pattern_initial.search(text.strip()) and re_pattern_final.search(text) else False
-  logger.debug(f'Text: {text} Found: {r}')
+  # Perform searches
+  r = True if re_full_pattern.search(text.strip()) else False
+  logger.debug(f'FullMatch text: {text} Found: {r}')
 
   if not r :
-      r = True if re_full_pattern.search(text) is not None else False
-      logger.debug(f'FullMatch: {text}: {r}')
+    rtitle = True if re_title_pattern.search(text.strip()) else False
+    logger.debug(f'Title Match: {title} Found: {rtitle}')
+
+    for num in number.split(" "):
+        if not inf_sub['season']:
+           rnumber = True if re.search(rf"\b{num}\b", text, re.I) else False
+        else:
+           rnumber = True if re.search(rf"\b{num}.*\b", text, re.I) else False
+
+    if inf_sub['type'] == "movie" :
+        raka = True if re.search(rf"\b{aka}\b", text, re.I) else False
+        r = True if rtitle and rnumber and raka else False
+    else:
+        r = True if rtitle and rnumber else False
+
+    logger.debug(f'Partial Match text: {text}: {r}')
  
   return r 
 
@@ -446,7 +444,13 @@ def exp_time_Cookie():
 def get_Cookie():
     """ Retrieve sdx cookie"""
     logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
-    cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL).headers.get('Set-Cookie').split(';')[0]
+    try:
+        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
+    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+        msg = Network_Connection_Error(e)
+        print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
+        logger.debug(f'Network Connection Error occurred: {msg}')
+        exit(1)
     return cookie_sdx
 
 def stor_Cookie(sdx_cookie):
@@ -517,7 +521,20 @@ def clean_list_subs(list_dict_subs):
         dictionary['fecha_subida'] = convert_datetime(str(dictionary['fecha_subida']))
 
     return list_dict_subs
-        
+
+def Network_Connection_Error(e) -> str:
+    """ Return a Network Connection Error message """
+    msg = e.__str__()
+    error_class = e.__class__.__name__
+    Network_error_msg= {
+        'ConnectTimeoutError' : "Connection to www.subdivx.com timed out",
+        'ProxyError' : "Unable to connect to proxy",
+        'NewConnectionError' : "Failed to establish a new connection",
+        'HTTPError' : msg
+    }
+    error_msg = f'{error_class} : {Network_error_msg[error_class]}'
+    return error_msg
+
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos""" 
@@ -607,14 +624,10 @@ def main():
         logger.addHandler(console)
     
     # Setting cookies
-    global c_sdx
-    c_sdx = None
-    c_sdx = check_Cookie_Status()
+    headers['Cookie'] = check_Cookie_Status()
     
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
-      global ARGS_PATH
-      ARGS_PATH = args.path
     else:
         logger.error(f'No file or folder were found for: "{args.path}"')
         sys.exit(1)
@@ -654,18 +667,25 @@ def main():
                   title = info["title"] 
                 else:
                     title=f"{info['title']} ({info['year']})" if "year" in info else info['title']
+                        
+            inf_sub = {
+                'type': info["type"],
+                'season' : False if info["type"] == "movie" else args.Season
+            }
             
             url = get_subtitle_url(
                 title, number,
                 metadata,
-                args.no_choose)
+                no_choose=args.no_choose,
+                inf_sub=inf_sub)
+            
         except NoResultsError as e:
             logger.error(str(e))
             url = None
 
         if (url is not None):
             with subtitle_renamer(filepath):
-                 get_subtitle(url)
+                get_subtitle(url, topath = args.path)
 
 
 if __name__ == '__main__':
