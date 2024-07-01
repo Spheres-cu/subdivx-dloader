@@ -598,7 +598,7 @@ def extract_meta_data(filename, kword):
     return Metadata(keywords, quality, codec)
 
 @contextmanager
-def subtitle_renamer(filepath):
+def subtitle_renamer(filepath, inf_sub):
     """dectect new subtitles files in a directory and rename with
        filepath basename"""
 
@@ -628,7 +628,13 @@ def subtitle_renamer(filepath):
            if os.path.exists(filename + new_ext):
                continue
            else:
-               os.rename(new_file_dirpath, filename + new_ext)
+               if inf_sub['type'] == "episode" :
+                   info = guessit(new_file)
+                   number = f"s{info['season']:02}e{info['episode']:02}"
+                   if number == inf_sub['number']:
+                       os.rename(new_file_dirpath, filename + new_ext)
+                   else:
+                       continue
         
         except OSError as e:
               print(e)
@@ -714,7 +720,8 @@ def main():
             
             inf_sub = {
                 'type': info["type"],
-                'season' : False if info["type"] == "movie" else args.Season
+                'season' : False if info["type"] == "movie" else args.Season,
+                'number' : f"s{info['season']:02}e{info['episode']:02}"
             }
             
             url = get_subtitle_url(
@@ -728,7 +735,7 @@ def main():
             url = None
 
         if (url is not None):
-            with subtitle_renamer(filepath):
+            with subtitle_renamer(filepath, inf_sub=inf_sub):
                  get_subtitle(url, topath = args.path)
 
 if __name__ == '__main__':
