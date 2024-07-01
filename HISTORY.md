@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.7.5 (2024-06-30)
+------------------
+- Better handled of the Network exceptions errors.
+- Updated handled of cookies.
+- Improved search filters.
+- Other minor changes.
+
 1.7 (2024-06-27)
 ------------------
 - Updated CLI code
