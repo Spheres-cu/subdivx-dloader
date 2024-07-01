@@ -711,6 +711,7 @@ def main():
                   title = info["title"] 
                 else:
                     title=f"{info['title']} ({info['year']})" if "year" in info else info['title']
+            
             inf_sub = {
                 'type': info["type"],
                 'season' : False if info["type"] == "movie" else args.Season
@@ -721,6 +722,7 @@ def main():
                 metadata,
                 no_choose=args.no_choose,
                 inf_sub=inf_sub)
+            
         except NoResultsError as e:
             logger.error(str(e))
             url = None
