@@ -108,26 +108,11 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
             fields=fields
         ).data
 
-    except urllib3.exceptions.NewConnectionError:
-        print("\n"  + Red + "[Error,", "Failed to establish a new connection!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "- Your Internet connection!")
+    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+        msg = Network_Connection_Error(e)
+        print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
+        logger.error(f'Network Connection Error occurred: {msg}')
         sys.exit(1)
-
-    except urllib3.exceptions.TimeoutError:
-        print("\n"  + Red + "[Error,", "Connection Timeout!]: " + NC + Yellow + "Unable to reach https://www.subdivx.com servers!" + NC + "\n\n" + Yellow + " Please check: " + NC + "\n" + \
-                "- Your Internet connection\n" + \
-                "- Your Firewall connections\n" + \
-                "- www.subdivx.com availability\n")
-        sys.exit(1)
-
-    except urllib3.exceptions.ProxyError:
-        print("\n"  + Red + "[Error,", "Cannot connect to proxy!] " + NC + "\n\n" + Yellow + " Please check: " + NC + "\n\n - Your proxy configuration!")
-        sys.exit(1)
-
-    except urllib3.exceptions.HTTPError as e:
-        error = e.__str__().split(":")
-        msg_error = error[1] + ', ' + error[3]
-        logger.error(f'HTTP error encountered: {msg_error}')
-        exit(1)
 
     try:
         sEcho = json.loads(page)['sEcho']
@@ -164,7 +149,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         # Cleaning Items
         list_Subs_Dicts = clean_list_subs(aaData_Items)
     else:
-        raise NoResultsError(f'No suitable data were found for: "{buscar}"') 
+        raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
     """" ####### For testing ########## 
     page = load_aadata()
@@ -396,7 +381,7 @@ def match_text(title, number, inf_sub, text):
   aka = "aka"
   
   # Setting searchs Patterns
-  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I)
+  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I) if inf_sub['type'] == "movie" else re.compile(rf"^{re.escape(title.split()[0])}.*{number}.*$", re.I)
   re_title_pattern = re.compile(rf"\b{re.escape(title)}\b", re.I)
 
   # Perform searches
@@ -480,7 +465,13 @@ def exp_time_Cookie():
 def get_Cookie():
     """ Retrieve sdx cookie"""
     logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
-    cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL).headers.get('Set-Cookie').split(';')[0]
+    try:
+        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
+    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+        msg = Network_Connection_Error(e)
+        print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
+        logger.debug(f'Network Connection Error occurred: {msg}')
+        exit(1)
     return cookie_sdx
 
 def stor_Cookie(sdx_cookie):
@@ -574,7 +565,20 @@ def clean_list_subs(list_dict_subs):
         dictionary['fecha_subida'] = convert_datetime(str(dictionary['fecha_subida']))
 
     return list_dict_subs
-        
+
+def Network_Connection_Error(e) -> str:
+    """ Return a Network Connection Error message """
+    msg = e.__str__()
+    error_class = e.__class__.__name__
+    Network_error_msg= {
+        'ConnectTimeoutError' : "Connection to www.subdivx.com timed out",
+        'ProxyError' : "Unable to connect to proxy",
+        'NewConnectionError' : "Failed to establish a new connection",
+        'HTTPError' : msg
+    }
+    error_msg = f'{error_class} : {Network_error_msg[error_class]}'
+    return error_msg
+
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos""" 
@@ -668,8 +672,6 @@ def main():
    
     if os.path.exists(args.path):
       cursor = FileFinder(args.path, with_extension=_extensions)
-      #global ARGS_PATH
-      #ARGS_PATH = args.path
     else:
         logger.error(f'No file or folder were found for: "{args.path}"')
         sys.exit(1)
