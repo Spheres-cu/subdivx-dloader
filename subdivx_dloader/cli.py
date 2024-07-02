@@ -628,14 +628,16 @@ def subtitle_renamer(filepath, inf_sub):
            if os.path.exists(filename + new_ext):
                continue
            else:
-               if inf_sub['type'] == "episode" :
-                   info = guessit(new_file)
-                   number = f"s{info['season']:02}e{info['episode']:02}"
-                   if number == inf_sub['number']:
-                       os.rename(new_file_dirpath, filename + new_ext)
-                   else:
-                       continue
-        
+                if inf_sub['type'] == "episode" :
+                    info = guessit(new_file)
+                    number = f"s{info['season']:02}e{info['episode']:02}"
+                    if number == inf_sub['number']:
+                        os.rename(new_file_dirpath, filename + new_ext)
+                    else:
+                        continue
+                else:
+                    os.rename(new_file_dirpath, filename + new_ext)
+                      
         except OSError as e:
               print(e)
               logger.error(e)
@@ -721,7 +723,7 @@ def main():
             inf_sub = {
                 'type': info["type"],
                 'season' : False if info["type"] == "movie" else args.Season,
-                'number' : f"s{info['season']:02}e{info['episode']:02}"
+                'number' : f"s{info['season']:02}e{info['episode']:02}" if "episode" in info else number
             }
             
             url = get_subtitle_url(
