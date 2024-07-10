@@ -151,7 +151,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
-    """" ####### For testing ########## 
+    """" ####### For testing ##########
     page = load_aadata()
     aaData = json.loads(page)['aaData']
     aaData_Items = get_Json_Dict_list(aaData)
@@ -191,7 +191,8 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         scores.append(score)
 
     results = sorted(zip(filtered_list_Subs_Dicts.items(), scores), key=lambda item: item[1], reverse=True)
-  
+    clean_results = get_clean_results(results)
+
     # Print subtitles search infos
     # Construct Table for console output
     
@@ -208,15 +209,14 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     if (no_choose==False):
         count = 0
         url_ids = []
-        for item in (results):
+        for item in clean_results:
             try:
-                url_ids.append(item[0][0])
-                detalles = item[0]
-                descripcion = tr.fill(highlight_text(detalles[1][0], metadata), width=77)
-                titulo = str(detalles[1][1])
-                descargas = str(detalles[1][2])
-                usuario = str(detalles[1][3])
-                fecha = str(detalles[1][4])
+                url_ids.append(item['id'])
+                descripcion = tr.fill(highlight_text(item['descripcion'], metadata), width=77)
+                titulo = str(item['titulo'])
+                descargas = str(item['descargas'])
+                usuario = str(item['nick'])
+                fecha = str(item['fecha_subida'])
                 table.add_row(str(count), titulo, descripcion, descargas, usuario, fecha)
             except IndexError:
                 pass   
@@ -565,6 +565,30 @@ def clean_list_subs(list_dict_subs):
         dictionary['fecha_subida'] = convert_datetime(str(dictionary['fecha_subida']))
 
     return list_dict_subs
+
+def get_clean_results(list_results):
+    """ Get a list of subs dict cleaned from `list_results` """
+    results_clean = []
+    for item in list_results:
+         results_clean.append(item[0])
+    list_Subs_results = list(map(list, results_clean))
+    
+    Subs_dict_results=[]
+    for _sub in list_Subs_results:
+
+        Sub_dict = {
+        "id":_sub[0],
+        "descripcion":_sub[1][0],
+        "titulo":_sub[1][1],
+        "descargas":_sub[1][2],
+        "nick":_sub[1][3],
+        "fecha_subida":_sub[1][4]
+        }
+        Subs_dict_results.append(Sub_dict)
+    
+    list_Subs_dict_results = get_Json_Dict_list(Subs_dict_results)
+
+    return list_Subs_dict_results
 
 def Network_Connection_Error(e) -> str:
     """ Return a Network Connection Error message """
