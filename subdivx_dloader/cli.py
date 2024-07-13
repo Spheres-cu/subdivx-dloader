@@ -129,7 +129,7 @@ def main():
         filename = os.path.basename(filepath)
         
         try:
-            info = guessit(filename, "--exclude release_group")
+            info = guessit(filename, "--exclude release_group --exclude other")
             if info["type"] == "episode" :
                number = f"s{info['season']:02}e{info['episode']:02}" if "episode" in info and not args.Season else f"s{info['season']:02}" 
             else:
@@ -150,7 +150,7 @@ def main():
                 'season' : False if info["type"] == "movie" else args.Season,
                 'number' : f"s{info['season']:02}e{info['episode']:02}" if "episode" in info else number
             }
-            
+
             url = get_subtitle_url(
                 title, number,
                 metadata,
