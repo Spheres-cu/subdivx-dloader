@@ -536,6 +536,7 @@ def Network_Connection_Error(e) -> str:
     }
     error_msg = f'{error_class} : {Network_error_msg[error_class] if error_class in Network_error_msg else msg }'
     return error_msg
+
 sdxcookie_name = 'sdx-cookie'
 
 def check_Cookie_Status():
