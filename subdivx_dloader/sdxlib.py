@@ -449,93 +449,6 @@ def highlight_text(text,  metadata):
     
     return highlighted
 
-sdxcookie_name = 'sdx-cookie'
-
-def check_Cookie_Status():
-    """Check the time and existence of the `cookie` session and return it"""
-    cookie = load_Cookie()
-    if cookie is None or exp_time_Cookie is True: 
-        cookie = get_Cookie()
-        stor_Cookie(cookie)
-        cookie = load_Cookie()
-        logger.debug('Cookie Loaded')
-
-    return cookie
-
-def exp_time_Cookie():
-    """Compare modified time and return `True` if is expired"""
-    # Get cookie modified time and convert it to datetime
-    temp_dir = tempfile.gettempdir()
-    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
-    csdx_ti_m = datetime.fromtimestamp(os.path.getmtime(cookiesdx_path))
-    delta_csdx = datetime.now() - csdx_ti_m
-    exp_c_time = timedelta(hours=24)
-
-    if delta_csdx > exp_c_time:
-            return True 
-    else:
-        return False
-
-def get_Cookie():
-    """ Retrieve sdx cookie"""
-    logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
-    try:
-        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
-    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
-        msg = Network_Connection_Error(e)
-        if LOGGER_LEVEL == logging.INFO:
-            print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
-        else:
-            logger.error(f'Network Connection Error occurred: {msg}')
-        exit(1)
-    return cookie_sdx
-
-def stor_Cookie(sdx_cookie):
-    """ Store sdx cookies """
-    temp_dir = tempfile.gettempdir()
-    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
-
-    with open(cookiesdx_path, 'w') as file:
-        file.write(sdx_cookie)
-        file.close()
-    logger.debug('Store cookie')
-    
-def load_Cookie():
-    """ Load stored sdx cookies return ``None`` if not exists"""
-    temp_dir = tempfile.gettempdir()
-    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
-    if os.path.exists(cookiesdx_path):
-        with open(cookiesdx_path, 'r') as filecookie:
-            sdx_cookie = filecookie.read()
-    else:
-        return None
-
-    return sdx_cookie
-
-def store_aadata(aadata):
-    """ Store aadata """
-    temp_dir = tempfile.gettempdir()
-    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
-
-    with open(aadata_path, 'wb') as file:
-        file.write(aadata)
-        file.close()
-    logger.debug('Store aadata')
-
-def load_aadata():
-    temp_dir = tempfile.gettempdir()
-    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
-    if os.path.exists(aadata_path):
-        with open(aadata_path, 'r') as aadata_file:
-            sdx_aadata = aadata_file.read()
-    else:
-        return None
-
-    return sdx_aadata
-
-# Setting cookies
-headers['Cookie'] = check_Cookie_Status()
-
 def backoff_delay(backoff_factor = 2, attempts = 2):
     # backoff algorithm
     delay = backoff_factor * (2 ** attempts)
@@ -623,3 +536,89 @@ def Network_Connection_Error(e) -> str:
     }
     error_msg = f'{error_class} : {Network_error_msg[error_class] if error_class in Network_error_msg else msg }'
     return error_msg
+sdxcookie_name = 'sdx-cookie'
+
+def check_Cookie_Status():
+    """Check the time and existence of the `cookie` session and return it"""
+    cookie = load_Cookie()
+    if cookie is None or exp_time_Cookie is True: 
+        cookie = get_Cookie()
+        stor_Cookie(cookie)
+        cookie = load_Cookie()
+        logger.debug('Cookie Loaded')
+
+    return cookie
+
+def exp_time_Cookie():
+    """Compare modified time and return `True` if is expired"""
+    # Get cookie modified time and convert it to datetime
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    csdx_ti_m = datetime.fromtimestamp(os.path.getmtime(cookiesdx_path))
+    delta_csdx = datetime.now() - csdx_ti_m
+    exp_c_time = timedelta(hours=24)
+
+    if delta_csdx > exp_c_time:
+            return True 
+    else:
+        return False
+
+def get_Cookie():
+    """ Retrieve sdx cookie"""
+    logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
+    try:
+        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
+    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+        msg = Network_Connection_Error(e)
+        if LOGGER_LEVEL == logging.INFO:
+            print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
+        else:
+            logger.error(f'Network Connection Error occurred: {msg}')
+        exit(1)
+    return cookie_sdx
+
+def stor_Cookie(sdx_cookie):
+    """ Store sdx cookies """
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+
+    with open(cookiesdx_path, 'w') as file:
+        file.write(sdx_cookie)
+        file.close()
+    logger.debug('Store cookie')
+    
+def load_Cookie():
+    """ Load stored sdx cookies return ``None`` if not exists"""
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    if os.path.exists(cookiesdx_path):
+        with open(cookiesdx_path, 'r') as filecookie:
+            sdx_cookie = filecookie.read()
+    else:
+        return None
+
+    return sdx_cookie
+
+def store_aadata(aadata):
+    """ Store aadata """
+    temp_dir = tempfile.gettempdir()
+    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
+
+    with open(aadata_path, 'wb') as file:
+        file.write(aadata)
+        file.close()
+    logger.debug('Store aadata')
+
+def load_aadata():
+    temp_dir = tempfile.gettempdir()
+    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
+    if os.path.exists(aadata_path):
+        with open(aadata_path, 'r') as aadata_file:
+            sdx_aadata = aadata_file.read()
+    else:
+        return None
+
+    return sdx_aadata
+
+# Setting cookies
+headers['Cookie'] = check_Cookie_Status()
