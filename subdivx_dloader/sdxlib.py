@@ -375,6 +375,7 @@ def match_text(title, number, inf_sub, text):
       title = title.replace(i, '')
       text = text.replace(i, '')
   aka = "aka"
+  search = f"{title} {number}"
   
   # Setting searchs Patterns
   re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I) if inf_sub['type'] == "movie" else re.compile(rf"^{re.escape(title.split()[0])}.*{number}.*$", re.I)
@@ -404,7 +405,12 @@ def match_text(title, number, inf_sub, text):
         r = True if rtitle and rnumber else False
 
     logger.debug(f'Partial Match text: {text}: {r}')
- 
+
+  if not r:
+    if all(re.search(rf"\b{word}\b", text, re.I) for word in search.split()) :
+        r = True
+    logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
+       
   return r 
 
 def extract_meta_data(filename, kword):
