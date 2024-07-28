@@ -11,17 +11,15 @@ import tempfile
 import textwrap as tr
 import logging.handlers
 from rich import box
-from colorama import init
 from rich.table import Table
-from rich.console import Console
+from rich.prompt import IntPrompt
+from .console import console
 from json import JSONDecodeError
 from collections import namedtuple
 from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
 from rarfile import is_rarfile, RarFile
 from datetime import datetime, timedelta
-
-init()
 
 #obtained from http://flexget.com/wiki/Plugins/quality
 _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
@@ -46,17 +44,6 @@ _sub_extensions = ['.srt', '.ssa']
 SUBDIVX_SEARCH_URL = 'https://www.subdivx.com/inc/ajax.php'
 
 SUBDIVX_DOWNLOAD_PAGE = 'https://www.subdivx.com/'
-
-# Colors
-Yellow='\033[0;33m'
-BYellow='\033[1;33m'
-On_Yellow='\033[33m'
-Red='\033[0;31m'
-BRed='\033[1;31m'
-On_Green='\033[42m'
-Green='\033[0;32m'
-BGreen='\033[1;32m'
-NC='\033[0m' # No Color
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
@@ -104,49 +91,48 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     buscar = f"{title} {number}"
     fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
     sEcho = "0"
-    print("\r")
-    logger.info(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
-    
-    try:
-        page = s.request(
-            'POST',
-            SUBDIVX_SEARCH_URL,
-            headers=headers,
-            fields=fields
-        ).data
+    console.print("\r")
+    logger.debug(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
+    with console.status(f'Searching subtitles for: ' + str(title) + " " + str(number).upper()):
+        try:
+            page = s.request(
+                'POST',
+                SUBDIVX_SEARCH_URL,
+                headers=headers,
+                fields=fields
+            ).data
 
-    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
-        msg = Network_Connection_Error(e)
-        if LOGGER_LEVEL == logging.INFO:
-            print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
-        else:
-            logger.error(f'Network Connection Error occurred: {msg}')
-        sys.exit(1)
+        except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+            msg = Network_Connection_Error(e)
+            console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
+            if LOGGER_LEVEL == logging.DEBUG:
+               logger.debug(f'Network Connection Error occurred: {msg}')
+            exit(1)
 
-    try:
-        sEcho = json.loads(page)['sEcho']
-        if sEcho == "0" :
-            attempts = 2
-            backoff_factor = 2
-            delay = backoff_delay(backoff_factor, attempts)
-            for _ in range(attempts):
-                logger.debug(f'Request Attempts #: {_}')
-                time.sleep(delay)
-                page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
-                sEcho = json.loads(page)['sEcho']
-                if sEcho == 0 :
-                    continue
-                else:
-                    json_aaData = json.loads(page)['aaData']
-                    break
-            if sEcho == "0":
-                raise NoResultsError(f'Not cookies found or expired, please repeat the search')
-        else:
-            json_aaData = json.loads(page)['aaData']
-    
-    except JSONDecodeError as msg:
-        logger.debug(f'Error JSONDecodeError: "{msg}"')
-        raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
+        try:
+            sEcho = json.loads(page)['sEcho']
+            if sEcho == "0" :
+                attempts = 2
+                backoff_factor = 2
+                delay = backoff_delay(backoff_factor, attempts)
+                for _ in range(attempts):
+                    logger.debug(f'Request Attempts #: {_}')
+                    time.sleep(delay)
+                    page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
+                    sEcho = json.loads(page)['sEcho']
+                    if sEcho == 0 :
+                        continue
+                    else:
+                        json_aaData = json.loads(page)['aaData']
+                        break
+                if sEcho == "0":
+                    raise NoResultsError(f'Not cookies found or expired, please repeat the search')
+            else:
+                json_aaData = json.loads(page)['aaData']
+        
+        except JSONDecodeError as msg:
+            logger.debug(f'Error JSONDecodeError: "{msg}"')
+            raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
     
     # For testing
     # store_aadata(page)
@@ -212,53 +198,56 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     # Print subtitles search infos
     # Construct Table for console output
     
-    console = Console()
-    table = Table(box=box.ROUNDED, title="\n>> Subtítulo: " + str(title) + " " + str(number).upper(), caption="[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo", title_style="bold green",
-                  show_header=True, header_style="bold yellow", caption_style="italic yellow", show_lines=True)
+    table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title) + " " + str(number).upper(), title_style="bold green",
+                  show_header=True, header_style="bold yellow", caption_style="italic yellow", show_lines=False)
     table.add_column("#", justify="center", vertical="middle", style="bold green")
-    table.add_column("Título", justify="center", vertical="middle", style="bold green")
-    table.add_column("Descripción", justify="center" )
+    table.add_column("Título", justify="center", vertical="middle", style="bold white")
+    #table.add_column("Descripción", justify="center" )
     table.add_column("Descargas", justify="center", vertical="middle")
     table.add_column("Usuario", justify="center", vertical="middle")
     table.add_column("Fecha", justify="center", vertical="middle")
 
     if (no_choose==False):
         count = 0
+        choices = []
+        choices.append(str(count))
         url_ids = []
         for item in results:
             try:
                 url_ids.append(item['id'])
-                descripcion = tr.fill(highlight_text(item['descripcion'], metadata), width=77)
+                #descripcion = tr.fill(highlight_text(item['descripcion'], metadata), width=77)
                 titulo = str(item['titulo'])
                 descargas = str(item['descargas'])
                 usuario = str(item['nick'])
                 fecha = str(item['fecha_subida'])
-                table.add_row(str(count), titulo, descripcion, descargas, usuario, fecha)
+                table.add_row(str(count+1), titulo, descargas, usuario, fecha)
             except IndexError:
-                pass   
+                pass
             count = count +1
+            choices.append(str(count))
+        
+        choices.append(str(count + 1))
         console.print(table)
-        print("\n" + Red + ">> [" + str(count) + "] Cancelar descarga\n" + NC )
-        res = -1
+        console.print("[bold red3]>> [[bold green]0[bold red3]] Cancelar descarga\r", new_line_start=True)
 
-        while (res < 0 or res > count):
-            try:
-               res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow +"] para descargar el sub. Enter para la [" + BGreen + "0"+ BYellow +"]: " + NC) or "0")
-            except KeyboardInterrupt:
-                logger.debug('Interrupted by user')
-                print(BRed + "\n\n Interrupto por el usuario..." + NC)
-                time.sleep(2)
-                clean_screen()
-                sys.exit(1)
-            except:
-                res = -1
-        if (res == count):
-            logger.debug('Download Canceled')
-            print(BRed + "\n Cancelando descarga..." + NC)
-            time.sleep(2)
+        try:
+            res = IntPrompt.ask("[bold yellow]>> Elija un [" + "[bold green]#" + "[bold yellow]] para descargar. Por defecto:", 
+                                show_choices=False, show_default=True, choices=choices, default=1)
+
+        except KeyboardInterrupt:
+            logger.debug('Interrupted by user')
+            console.print(":slightly_frowning_face: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+            time.sleep(0.5)
             clean_screen()
-            sys.exit(0)
-        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[res])
+            exit(1)
+
+        if (res == 0):
+            logger.debug('Download Canceled')
+            console.print(":confused_face: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+            time.sleep(0.5)
+            clean_screen()
+            exit(0)
+        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[res - 1])
     else:
         # get first subtitle
         url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[0])
@@ -274,23 +263,23 @@ def get_subtitle(url, topath):
     temp_file = NamedTemporaryFile(delete=False)
     SUCCESS = False
 
-    # get direct download link    
+    # get direct download link
+    clean_screen()
     for i in range ( 9, 0, -1 ):
 
         logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
-        
         # Download file
-        try:
-            temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
-            temp_file.seek(0)
-        except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
-            msg = Network_Connection_Error(e)
-            if LOGGER_LEVEL == logging.INFO:
-                print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
-            else:
-                logger.error(f'Network Connection Error occurred: {msg}')
-            sys.exit(1)
-            
+        with console.status("Downloading Subtitle... ", spinner="dots4"):
+            try:
+                temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
+                temp_file.seek(0)
+            except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
+                msg = Network_Connection_Error(e)
+                console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
+                if LOGGER_LEVEL == logging.DEBUG:
+                    logger.debug(f'Network Connection Error occurred: {msg}')
+                exit(1)
+
         # Checking if the file is zip or rar then decompress
         compressed_sub_file = ZipFile(temp_file) if is_zipfile(temp_file.name) else RarFile(temp_file) if is_rarfile(temp_file.name) else None
 
@@ -301,47 +290,70 @@ def get_subtitle(url, topath):
             # In case of existence of various subtitles choose which to download
             if len(compressed_sub_file.infolist()) > 1 :
                 clean_screen()
-                console = Console()
                 count = 0
+                choices = []
+                choices.append(str(count))
                 list_sub = []
                 table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
-                              header_style="bold yellow", show_lines=True, title_justify='center')
+                            header_style="bold yellow", show_lines=True, title_justify='center')
                 table.add_column("#", justify="center", vertical="middle", style="bold green")
-                table.add_column("Subtítulo", justify="center" , no_wrap=True)
+                table.add_column("Subtítulos", justify="center" , no_wrap=True)
+
                 for i in compressed_sub_file.infolist():
+                    if i.is_dir() or os.path.basename(i.filename).startswith("._"):
+                        continue
+                    i.filename = os.path.basename(i.filename)
                     list_sub.append(i.filename)
-                    table.add_row(str(count), str(i.filename))
+                    table.add_row(str(count + 1), str(i.filename))
                     count += 1
+                    choices.append(str(count))
+            
+                choices.append(str(count + 1))
                 console.print(table)
-                print("\n" + BGreen + ">> [" + str(count) + "] Descargar todos" + NC )
-                print("\n" + Red + ">> [" + str(count+1) + "] Cancelar descarga\n" + NC )
-                res = -1
-                while (res < 0 or res > count + 1):
-                    try:
-                       res = int(input (BYellow + ">> Elija un [" + BGreen + "#" + BYellow + "]: " + NC) or "0")
-                    except:
-                        res = -1
+                console.print("[bold green]>> [0] Descargar todos\r", new_line_start=True)
+                console.print("[bold red]>> [" + str(count + 1) + "] Cancelar descarga\r", new_line_start=True)
+
+                try:
+                    res = IntPrompt.ask("[bold yellow]>> Elija un [" + "[bold green]#" + "][bold yellow]. Por defecto:", 
+                                show_choices=False, show_default=True, choices=choices, default=0)
+                except KeyboardInterrupt:
+                    logger.debug('Interrupted by user')
+                    console.print(":slightly_frowning_face: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+                    time.sleep(0.5)
+                    clean_screen()
+                    exit(1)
+            
                 if (res == count + 1):
                     logger.debug('Canceled Download Subtitle')
-                    print(BRed + "\n Cancelando descarga..." + NC)
+                    console.print(":confused_face: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
                     temp_file.close()
                     os.unlink(temp_file.name)
                     time.sleep(2)
                     clean_screen()
                     sys.exit(0)
-                logger.info('Decompressing files')
-                if res == count:
-                    for sub in list_sub:
-                        if any(sub.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub:
-                            logger.debug(' '.join(['Decompressing subtitle:', sub, 'to', os.path.dirname(topath)]))
-                            compressed_sub_file.extract(sub, os.path.dirname(topath))
+
+                logger.debug('Decompressing files')
+                if res == 0:
+                    with compressed_sub_file as csf:
+                        for sub in csf.infolist():
+                            if not sub.is_dir():
+                                sub.filename = os.path.basename(sub.filename)
+                            if any(sub.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub.filename:
+                                logger.debug(' '.join(['Decompressing subtitle:', sub.filename, 'to', os.path.dirname(topath)]))
+                                csf.extract(sub, os.path.dirname(topath))
                     compressed_sub_file.close()
                 else:
-                    if any(list_sub[res].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res]:
-                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res], 'to', os.path.dirname(topath)]))
-                        compressed_sub_file.extract(list_sub[res], os.path.dirname(topath))
+                    if any(list_sub[res - 1].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res - 1]:
+                        with compressed_sub_file as csf:
+                            for sub in csf.infolist():
+                                if not sub.is_dir():
+                                    sub.filename = os.path.basename(sub.filename)
+                                    if list_sub[res - 1] == sub.filename :
+                                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res - 1], 'to', os.path.dirname(topath)]))
+                                        csf.extract(sub, os.path.dirname(topath))
                     compressed_sub_file.close()
-                logger.info(f"Done extract subtitles!")
+                logger.debug(f"Done extract subtitles!")
+                console.print(":Smiley: Done extract subtitle!", emoji=True, new_line_start=True)
             else:
                 for name in compressed_sub_file.infolist():
                     # don't unzip stub __MACOSX folders
@@ -349,8 +361,8 @@ def get_subtitle(url, topath):
                         logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
                         compressed_sub_file.extract(name, os.path.dirname(topath))
                 compressed_sub_file.close()
-                logger.info(f"Done extract subtitle!")
-
+                logger.debug(f"Done extract subtitle!")
+                console.print(":Smiley: Done extract subtitle!", emoji=True, new_line_start=True)
             break
         else:
             SUCCESS = False
@@ -361,7 +373,7 @@ def get_subtitle(url, topath):
     
     if not SUCCESS :
         raise NoResultsError(f'No suitable subtitles download for : "{url}"')
-   
+    
     # Cleaning
     time.sleep(2)
     clean_screen()
@@ -577,11 +589,11 @@ def get_Cookie():
         cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
     except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
         msg = Network_Connection_Error(e)
-        if LOGGER_LEVEL == logging.INFO:
-            print("\n" + Red + "Some Network Connection Error occurred: " + NC + msg)
-        else:
-            logger.error(f'Network Connection Error occurred: {msg}')
+        console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
+        if LOGGER_LEVEL == logging.DEBUG:
+           logger.debug(f'Network Connection Error occurred: {msg}')
         exit(1)
+
     return cookie_sdx
 
 def stor_Cookie(sdx_cookie):
