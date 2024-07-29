@@ -351,6 +351,7 @@ def get_subtitle(url, topath):
                                     if list_sub[res - 1] == sub.filename :
                                         logger.debug(' '.join(['Decompressing subtitle:', list_sub[res - 1], 'to', os.path.dirname(topath)]))
                                         csf.extract(sub, os.path.dirname(topath))
+                                        break
                     compressed_sub_file.close()
                 logger.debug(f"Done extract subtitles!")
                 console.print(":Smiley: Done extract subtitle!", emoji=True, new_line_start=True)
