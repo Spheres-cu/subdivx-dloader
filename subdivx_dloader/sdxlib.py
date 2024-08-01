@@ -164,7 +164,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                         live.stop()
                         res = selected
                         break
-                    if ch == key.ESC or ch == key.ESC_2:
+                    if ch == "s" or ch == "S":
                         live.stop()
                         res = -1
                         break
