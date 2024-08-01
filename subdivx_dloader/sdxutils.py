@@ -343,7 +343,7 @@ def generate_results_table(console, title, results, selected) -> Table:
     SELECTED = Style(color="green", bgcolor="bright_white", bold=True)
    
     table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title), 
-                  caption=">>BAJAR [[bold green]:down_arrow:[/]] o [[bold green]PAGE DOWN[/]] SUBIR [[bold green]:up_arrow:[/]] o [[bold green]PAGE UP[/]] [[bold green]ENTER[/]] DESCARGAR [[bold green]ESC[/]] SALIR", title_style="bold green",
+                  caption=">>BAJAR [[bold green]:down_arrow:[/]] o [[bold green]PAGE DOWN[/]] SUBIR [[bold green]:up_arrow:[/]] o [[bold green]PAGE UP[/]] [[bold green]ENTER[/]] DESCARGAR [[bold green]S[/]] SALIR", title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="bold yellow", show_lines=False)
     table.add_column("#", justify="center", vertical="middle", style="bold green")
     table.add_column("Título", justify="center", vertical="middle", style="bold white")
