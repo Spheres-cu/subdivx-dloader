@@ -9,6 +9,13 @@ from .sdxlib import _sub_extensions
 from tvnamer.utils import FileFinder
 from contextlib import contextmanager
 
+_extensions = [
+    'avi', 'mkv', 'mp4',
+    'mpg', 'm4v', 'ogv',
+    'vob', '3gp',
+    'part', 'temp', 'tmp'
+]
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -18,13 +25,6 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
-
-_extensions = [
-    'avi', 'mkv', 'mp4',
-    'mpg', 'm4v', 'ogv',
-    'vob', '3gp',
-    'part', 'temp', 'tmp'
-]
 
 @contextmanager
 def subtitle_renamer(filepath, inf_sub):
