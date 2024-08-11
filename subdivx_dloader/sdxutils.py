@@ -41,8 +41,6 @@ SUBDIVX_DOWNLOAD_PAGE = 'https://www.subdivx.com/'
 
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
-SELECTED = Style(color="blue", bgcolor="white", bold=True)
-
 # Configure connections
 headers={"user-agent" : 
          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"}
@@ -51,9 +49,6 @@ s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED",
 
 # Proxy: You must modify this configuration depending on the Proxy you use
 #s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
-
-# mitmproxy test
-#s = urllib3.ProxyManager('http://127.0.0.1:8080/', num_pools=1, headers=headers, retries=False, timeout=15)
 
 class NoResultsError(Exception):
     pass
@@ -95,7 +90,7 @@ def match_text(title, number, inf_sub, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
 
   #Setting Patterns
-  special_char = ["`", "'", "´", ":", ".", "?"]
+  special_char = ["`", "'", "´", ":", ".", "?", "&"]
   for i in special_char:
       title = title.replace(i, '')
       text = text.replace(i, '')
@@ -340,13 +335,13 @@ headers['Cookie'] = check_Cookie_Status()
 def generate_results_table(console, title, results, selected) -> Table:
     """Generate Selectable results Table"""
 
-    SELECTED = Style(color="green", bgcolor="bright_white", bold=True)
+    SELECTED = Style(color="green", bgcolor="gray100", bold=True)
    
     table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title), 
                   caption=">>BAJAR [[bold green]:down_arrow:[/]] o [[bold green]PAGE DOWN[/]] SUBIR [[bold green]:up_arrow:[/]] o [[bold green]PAGE UP[/]] [[bold green]ENTER[/]] DESCARGAR [[bold green]S[/]] SALIR", title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="bold yellow", show_lines=False)
-    table.add_column("#", justify="center", vertical="middle", style="bold green")
-    table.add_column("Título", justify="center", vertical="middle", style="bold white")
+    table.add_column("#", justify="right", vertical="middle", style="bold green")
+    table.add_column("Título", justify="left", vertical="middle", style="bold white")
     table.add_column("Descargas", justify="center", vertical="middle")
     table.add_column("Usuario", justify="center", vertical="middle")
     table.add_column("Fecha", justify="center", vertical="middle")
@@ -360,7 +355,7 @@ def generate_results_table(console, title, results, selected) -> Table:
             usuario = str(item['nick'])
             fecha = str(item['fecha_subida'])
 
-            items = [str(count+1), titulo, descargas, usuario, fecha]
+            items = [str(count + 1), titulo, descargas, usuario, fecha]
             rows.append(items)
         except IndexError:
             pass
@@ -378,6 +373,9 @@ def generate_results_table(console, title, results, selected) -> Table:
                 selected -= selected - size // 2
     
     for i, row in enumerate(rows):
+        #row[0] = ":arrow_forward:" if i == selected else ""
         table.add_row(*row, style=SELECTED if i == selected else "bold white")
+        #table.add_row(*row)
+
 
     return table
