@@ -84,7 +84,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
-    """" ####### For testing ########## 
+    """" ####### For testing ##########
     page = load_aadata()
     aaData = json.loads(page)['aaData']
     aaData_Items = get_Json_Dict_list(aaData)
@@ -94,7 +94,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
    
-    """  ##### For testing ######### """
+    ##### For testing ######### """
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     
@@ -148,7 +148,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 
             except IndexError:
                 pass
-            count = count +1
+            count = count + 1
         try:
             selected = 0
             with Live(
