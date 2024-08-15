@@ -5,6 +5,7 @@ import time
 from rich import box
 from rich.table import Table
 from rich.prompt import IntPrompt
+from rich.live import Live
 from .console import console
 from json import JSONDecodeError
 from tempfile import NamedTemporaryFile
@@ -76,7 +77,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     # store_aadata(page)
     
     # Checking Json Data Items
-    aaData_Items = get_Json_Dict_list(json_aaData)
+    aaData_Items = get_list_Dict(json_aaData)
     
     if aaData_Items is not None:
         # Cleaning Items
@@ -84,10 +85,10 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
-    """" ####### For testing ##########
+    """" ####### For testing ########## 
     page = load_aadata()
     aaData = json.loads(page)['aaData']
-    aaData_Items = get_Json_Dict_list(aaData)
+    aaData_Items = get_list_Dict(aaData)
 
     if aaData_Items is not None:
          list_Subs_Dicts = clean_list_subs(aaData_Items)
@@ -141,10 +142,11 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     if (no_choose==False):
         count = 0
         url_ids = []
+    
         for item in results:
             try:
                 url_ids.append(item['id'])
-                #descripcion = tr.fill(highlight_text(item['descripcion'], metadata), width=77)
+                # descriptions.append(tr.fill(highlight_text(item['descripcion'], metadata), width=77))
 
             except IndexError:
                 pass
@@ -152,14 +154,16 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         try:
             selected = 0
             with Live(
-                generate_results_table (console, table_title, results, selected), auto_refresh=False
+                generate_results (console, table_title, results, metadata, selected),auto_refresh=False
             ) as live:
                 while True:
                     ch = readkey()
                     if ch == key.UP or ch == key.PAGE_UP:
                         selected = max(0, selected - 1)
+
                     if ch == key.DOWN or ch == key.PAGE_DOWN:
                         selected = min(count - 1, selected + 1)
+
                     if ch == key.ENTER:
                         live.stop()
                         res = selected
@@ -168,17 +172,19 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                         live.stop()
                         res = -1
                         break
-                    live.update(generate_results_table(console, table_title, results, selected), refresh=True)
+                    live.update(generate_results(console, table_title, results, metadata, selected), refresh=True)
 
         except KeyboardInterrupt:
             logger.debug('Interrupted by user')
+            clean_screen()
             console.print(":slightly_frowning_face: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
-            time.sleep(0.5)
+            time.sleep(0.8)
             clean_screen()
             exit(1)
 
         if (res == -1):
             logger.debug('Download Canceled')
+            clean_screen()
             console.print("\r\n" + ":confused_face: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
