@@ -10,9 +10,12 @@ import logging.handlers
 from collections import namedtuple
 from datetime import datetime, timedelta
 from rich import box
-from rich.live import Live
+from rich.layout import Layout
+from rich.panel import Panel
 from rich.style import Style
 from rich.table import Table
+from rich.console import Group
+from rich.align import Align
 from readchar import readkey, key
 
 from .sdxlib import console
@@ -180,12 +183,12 @@ def convert_datetime(string_datetime:str):
     
     return date_time_str
 
-def get_Json_Dict_list(Json_data):
-    """ Checking if the JSON Data is a list of subtitles dictionary """
+def get_list_Dict(Data):
+    """ Checking if ``Data`` is a list of dictionarys """
 
-    if isinstance(Json_data, list) and all(isinstance(item, dict)  
-        for item in Json_data):  
-            list_of_dicts = Json_data
+    if isinstance(Data, list) and all(isinstance(item, dict)  
+        for item in Data):  
+            list_of_dicts = Data
     else:
         return None
     
@@ -226,7 +229,7 @@ def get_clean_results(list_results):
         }
         Subs_dict_results.append(Sub_dict)
     
-    list_Subs_dict_results = get_Json_Dict_list(Subs_dict_results)
+    list_Subs_dict_results = get_list_Dict(Subs_dict_results)
 
     return list_Subs_dict_results
 
@@ -332,13 +335,44 @@ def load_aadata():
 # Setting cookies
 headers['Cookie'] = check_Cookie_Status()
 
-def generate_results_table(console, title, results, selected) -> Table:
+def make_layout() -> Layout:
+    """Define the layout."""
+    layout = Layout(name="results")
+
+    layout.split_column(
+        Layout(name="table"),
+        Layout(name="description", size=5, ratio=1),
+    )
+    return layout
+
+def make_description_panel(description) -> Panel:
+    """Define a description Panel"""
+    descriptions = Table.grid(padding=1)
+    descriptions.add_column()
+    descriptions.add_row(description)
+    descriptions_panel = Panel(
+        Align.center(
+            Group(descriptions, fit=True), vertical="middle",
+        ),
+        box = box.ROUNDED,
+        title = "[bold yellow]Descripción:[/]",
+        title_align = "left",
+        border_style = "none",
+        subtitle = "[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo",
+        subtitle_align = "center"
+    )
+
+    return descriptions_panel
+
+
+def generate_results(console, title, results, metadata, selected) -> Layout:
     """Generate Selectable results Table"""
 
     SELECTED = Style(color="green", bgcolor="gray100", bold=True)
-   
+    layout_results = make_layout() 
+
     table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title), 
-                  caption=">>BAJAR [[bold green]:down_arrow:[/]] o [[bold green]PAGE DOWN[/]] SUBIR [[bold green]:up_arrow:[/]] o [[bold green]PAGE UP[/]] [[bold green]ENTER[/]] DESCARGAR [[bold green]S[/]] SALIR", title_style="bold green",
+                  caption=">> [[bold green]:arrow_up_down:[/]] BAJAR/SUBIR o [[bold green]PAGE DOWN/UP[/]] [[bold green]:right_arrow_curving_left:[/] ] DESCARGAR [[bold green]S[/]] SALIR", title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="bold yellow", show_lines=False)
     table.add_column("#", justify="right", vertical="middle", style="bold green")
     table.add_column("Título", justify="left", vertical="middle", style="bold white")
@@ -348,12 +382,14 @@ def generate_results_table(console, title, results, selected) -> Table:
 
     count = 0
     rows = []
+    descriptions = []
     for item in results:
         try:
             titulo = str(item['titulo'])
             descargas = str(item['descargas'])
             usuario = str(item['nick'])
             fecha = str(item['fecha_subida'])
+            descriptions.append(tr.fill(highlight_text(item['descripcion'], metadata), width=77))
 
             items = [str(count + 1), titulo, descargas, usuario, fecha]
             rows.append(items)
@@ -373,9 +409,11 @@ def generate_results_table(console, title, results, selected) -> Table:
                 selected -= selected - size // 2
     
     for i, row in enumerate(rows):
-        #row[0] = ":arrow_forward:" if i == selected else ""
-        table.add_row(*row, style=SELECTED if i == selected else "bold white")
-        #table.add_row(*row)
+        row[0] =  "[bold red]:arrow_forward:[/] " + row[0] if i == selected else " " + row[0]
+        # table.add_row(*row, style=SELECTED if i == selected else "bold white")
+        table.add_row(*row)
 
-
-    return table
+    layout_results["table"].update(table)
+    layout_results["description"].update(make_description_panel(descriptions[selected]))
+    
+    return layout_results
