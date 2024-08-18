@@ -341,7 +341,7 @@ def make_layout() -> Layout:
 
     layout.split_column(
         Layout(name="table"),
-        Layout(name="description", size=5, ratio=1),
+        Layout(name="description", size=6, ratio=1),
     )
     return layout
 
@@ -351,15 +351,14 @@ def make_description_panel(description) -> Panel:
     descriptions.add_column()
     descriptions.add_row(description)
     descriptions_panel = Panel(
-        Align.center(
-            Group(descriptions, fit=True), vertical="middle",
-        ),
+        Align.center(descriptions, vertical = "middle"),
         box = box.ROUNDED,
         title = "[bold yellow]Descripción:[/]",
         title_align = "left",
         border_style = "none",
         subtitle = "[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo",
-        subtitle_align = "center"
+        subtitle_align = "center",
+        padding = 1 
     )
 
     return descriptions_panel
@@ -368,7 +367,7 @@ def make_description_panel(description) -> Panel:
 def generate_results(console, title, results, metadata, selected) -> Layout:
     """Generate Selectable results Table"""
 
-    SELECTED = Style(color="green", bgcolor="gray100", bold=True)
+    SELECTED = Style(color="green", bgcolor="medium_purple4", bold=True)
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title), 
@@ -410,8 +409,8 @@ def generate_results(console, title, results, metadata, selected) -> Layout:
     
     for i, row in enumerate(rows):
         row[0] =  "[bold red]:arrow_forward:[/] " + row[0] if i == selected else " " + row[0]
-        # table.add_row(*row, style=SELECTED if i == selected else "bold white")
-        table.add_row(*row)
+        table.add_row(*row, style=SELECTED if i == selected else "bold white")
+        # table.add_row(*row)
 
     layout_results["table"].update(table)
     layout_results["description"].update(make_description_panel(descriptions[selected]))
