@@ -31,7 +31,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
     sEcho = "0"
     console.print("\r")
-    logger.debug(f'Searching subtitlesfor: ' + str(title) + " " + str(number).upper())
+    logger.debug(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     with console.status(f'Searching subtitles for: ' + str(title) + " " + str(number).upper()):
         try:
             page = s.request(
