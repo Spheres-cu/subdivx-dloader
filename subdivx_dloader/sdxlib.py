@@ -7,6 +7,7 @@ from rich.table import Table
 from rich.prompt import IntPrompt
 from rich.live import Live
 from .console import console
+from readchar import readkey, key
 from json import JSONDecodeError
 from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
@@ -167,8 +168,8 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                     if ch == key.ENTER:
                         live.stop()
                         res = results_pages['pages'][page][selected]['id']
-                        logger.debug(f'res: {res}')
                         break
+
                     if ch in ["S", "s"]:
                         live.stop()
                         res = -1
