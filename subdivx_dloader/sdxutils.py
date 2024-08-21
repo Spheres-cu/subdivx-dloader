@@ -367,7 +367,7 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
     SELECTED = Style(color="green", bgcolor="medium_purple4", bold=True)
     layout_results = make_layout() 
 
-    table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title), 
+    table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
                   caption="[[bold red]:arrow_forward:[/]]:SELECCIÓN | [[bold green]:arrow_down::arrow_up: -:arrow_forward: " \
                     ":arrow_backward:- [/]]: MOVERSE | " \
                    "[[bold green]:right_arrow_curving_left:[/] ] DESCARGAR [[bold green]S[/]] SALIR \n" \
