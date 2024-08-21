@@ -34,7 +34,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     console.print("\r")
     logger.debug(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     with console.status(f'Searching subtitles for: ' + str(title) + " " + str(number).upper()):
-        try:
+        """try:
             page = s.request(
                 'POST',
                 SUBDIVX_SEARCH_URL,
@@ -86,7 +86,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
-    """" ####### For testing ########## 
+    """" ####### For testing ########## """
     page = load_aadata()
     aaData = json.loads(page)['aaData']
     aaData_Items = get_list_Dict(aaData)
@@ -199,14 +199,14 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 
         except KeyboardInterrupt:
             logger.debug('Interrupted by user')
-            console.print(":slightly_frowning_face: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+            console.print(":cross_mark: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
             exit(1)
 
         if (res == -1):
             logger.debug('Download Canceled')
-            console.print("\r\n" + ":confused_face: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+            console.print("\r\n" + ":cross_mark: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
             exit(0)
@@ -281,14 +281,14 @@ def get_subtitle(url, topath):
                                 show_choices=False, show_default=True, choices=choices, default=0)
                 except KeyboardInterrupt:
                     logger.debug('Interrupted by user')
-                    console.print(":slightly_frowning_face: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+                    console.print(":cross_mark: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
                     time.sleep(0.5)
                     clean_screen()
                     exit(1)
             
                 if (res == count + 1):
                     logger.debug('Canceled Download Subtitle')
-                    console.print(":confused_face: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+                    console.print(":cross_mark: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
                     temp_file.close()
                     os.unlink(temp_file.name)
                     time.sleep(2)
@@ -317,7 +317,7 @@ def get_subtitle(url, topath):
                                         break
                     compressed_sub_file.close()
                 logger.debug(f"Done extract subtitles!")
-                console.print(":Smiley: Done extract subtitle!", emoji=True, new_line_start=True)
+                console.print(":information: Done extract subtitle!", emoji=True, new_line_start=True)
             else:
                 for name in compressed_sub_file.infolist():
                     # don't unzip stub __MACOSX folders
@@ -326,7 +326,7 @@ def get_subtitle(url, topath):
                         compressed_sub_file.extract(name, os.path.dirname(topath))
                 compressed_sub_file.close()
                 logger.debug(f"Done extract subtitle!")
-                console.print(":Smiley: Done extract subtitle!", emoji=True, new_line_start=True)
+                console.print(":information: Done extract subtitle!", emoji=True, new_line_start=True)
             break
         else:
             SUCCESS = False
