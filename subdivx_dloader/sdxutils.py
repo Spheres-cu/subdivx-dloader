@@ -5,7 +5,6 @@ import logging
 import certifi
 import urllib3
 import tempfile
-import textwrap as tr
 import logging.handlers
 from collections import namedtuple
 from datetime import datetime, timedelta
@@ -16,8 +15,6 @@ from rich.style import Style
 from rich.table import Table
 from rich.align import Align
 from rich.text import Text
-
-from readchar import readkey, key
 
 from .sdxlib import console
 
