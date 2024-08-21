@@ -147,7 +147,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
             selected = 0
             page = 0
             with Live(
-                generate_results (table_title, results_pages, metadata, page, selected),auto_refresh=False
+                generate_results (table_title, results_pages, metadata, page, selected),auto_refresh=False, transient=True
             ) as live:
                 while True:
                     ch = readkey()
@@ -156,6 +156,27 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 
                     if ch == key.DOWN or ch == key.PAGE_DOWN:
                         selected = min(len(results_pages['pages'][page]) - 1, selected + 1)
+
+                    if ch in ["D", "d"]:
+                        description_selected = results_pages['pages'][page][selected]['descripcion']
+                        subtitle_selected =  results_pages['pages'][page][selected]['titulo']
+                        description = MetadataHighlighter(description_selected, metadata)
+
+                        layout_description = make_screen_layout()
+                        layout_description["description"].update(make_description_panel(description))
+                        layout_description["subtitle"].update(Align.center(
+                                    "Subtítulo: " + str(subtitle_selected),
+                                    vertical="middle",
+                                    style="italic bold green"
+                                    )
+                        )
+
+                        with console.screen() as screen: 
+                            while True:
+                                screen.update(layout_description)
+                                ch_exit = readkey()
+                                if ch_exit in ["S", "s"]:
+                                    break
 
                     if ch == key.RIGHT :
                         page = min(results_pages["pages_no"] - 1, page + 1)
@@ -178,7 +199,6 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 
         except KeyboardInterrupt:
             logger.debug('Interrupted by user')
-            clean_screen()
             console.print(":slightly_frowning_face: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
@@ -186,7 +206,6 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 
         if (res == -1):
             logger.debug('Download Canceled')
-            clean_screen()
             console.print("\r\n" + ":confused_face: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
