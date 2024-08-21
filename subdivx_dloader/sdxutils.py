@@ -14,8 +14,9 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.style import Style
 from rich.table import Table
-from rich.console import Group
 from rich.align import Align
+from rich.text import Text
+
 from readchar import readkey, key
 
 from .sdxlib import console
@@ -106,11 +107,11 @@ def match_text(title, number, inf_sub, text):
 
   # Perform searches
   r = True if re_full_pattern.search(text.strip()) else False
-  logger.debug(f'FullMatch text: {text} Found: {r}')
+#   logger.debug(f'FullMatch text: {text} Found: {r}')
 
   if not r :
     rtitle = True if re_title_pattern.search(text.strip()) else False
-    logger.debug(f'Title Match: {title} Found: {rtitle}')
+    # logger.debug(f'Title Match: {title} Found: {rtitle}')
 
     for num in number.split(" "):
         if not inf_sub['season']:
@@ -118,7 +119,7 @@ def match_text(title, number, inf_sub, text):
         else:
            rnumber = True if re.search(rf"\b{num}.*\b", text, re.I) else False
     
-    logger.debug(f'Number Match: {number} Found: {rnumber}')
+    # logger.debug(f'Number Match: {number} Found: {rnumber}')
 
     if inf_sub['type'] == "movie" :
         raka = True if re.search(rf"\b{aka}\b", text, re.I) else False
@@ -127,12 +128,12 @@ def match_text(title, number, inf_sub, text):
     else:
         r = True if rtitle and rnumber else False
 
-    logger.debug(f'Partial Match text: {text}: {r}')
+    # logger.debug(f'Partial Match text: {text}: {r}')
 
   if not r:
     if all(re.search(rf"\b{word}\b", text, re.I) for word in search.split()) :
         r = True
-    logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
+    # logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
        
   return r 
 
@@ -341,7 +342,7 @@ def make_layout() -> Layout:
 
     layout.split_column(
         Layout(name="table"),
-        Layout(name="description", size=6, ratio=1),
+        Layout(name="description", size=8, ratio=1),
     )
     return layout
 
@@ -355,8 +356,7 @@ def make_description_panel(description) -> Panel:
         box = box.ROUNDED,
         title = "[bold yellow]Descripción:[/]",
         title_align = "left",
-        border_style = "none",
-        subtitle = "[white on green4]Coincidencias[default on default] [italic yellow]con los metadatos del archivo",
+        subtitle = "[white on green4]Coincidencias[/] [italic yellow]con los metadatos del archivo[/]",
         subtitle_align = "center",
         padding = 1 
     )
@@ -364,14 +364,18 @@ def make_description_panel(description) -> Panel:
     return descriptions_panel
 
 
-def generate_results(console, title, results, metadata, selected) -> Layout:
+def generate_results(title, results, metadata: Metadata, page, selected) -> Layout:
     """Generate Selectable results Table"""
 
     SELECTED = Style(color="green", bgcolor="medium_purple4", bold=True)
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title="\n>> Resultados para: " + str(title), 
-                  caption=">> [[bold green]:arrow_up_down:[/]] BAJAR/SUBIR o [[bold green]PAGE DOWN/UP[/]] [[bold green]:right_arrow_curving_left:[/] ] DESCARGAR [[bold green]S[/]] SALIR", title_style="bold green",
+                  caption="[[bold red]:arrow_forward:[/]]:SELECCIÓN | [[bold green]:arrow_down::arrow_up: -:arrow_forward: " \
+                    ":arrow_backward:- [/]]: MOVERSE | " \
+                   "[[bold green]:right_arrow_curving_left:[/] ] DESCARGAR [[bold green]S[/]] SALIR \n" \
+                    "[italic] Mostrando página " + str(page + 1) +" de " + str(results['pages_no']) + " de " + str(results['total']) + " resultado(s)[/]",
+                    title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="bold yellow", show_lines=False)
     table.add_column("#", justify="right", vertical="middle", style="bold green")
     table.add_column("Título", justify="left", vertical="middle", style="bold white")
@@ -379,40 +383,55 @@ def generate_results(console, title, results, metadata, selected) -> Layout:
     table.add_column("Usuario", justify="center", vertical="middle")
     table.add_column("Fecha", justify="center", vertical="middle")
 
-    count = 0
+    count = page * 10
     rows = []
     descriptions = []
-    for item in results:
+ 
+    for item in results['pages'][page]:
         try:
             titulo = str(item['titulo'])
             descargas = str(item['descargas'])
             usuario = str(item['nick'])
             fecha = str(item['fecha_subida'])
-            descriptions.append(tr.fill(highlight_text(item['descripcion'], metadata), width=77))
+            descriptions.append(MetadataHighlighter(item['descripcion'], metadata))
 
             items = [str(count + 1), titulo, descargas, usuario, fecha]
             rows.append(items)
         except IndexError:
             pass
         count = count +1
-
-        size = console.height - 4
-        if len(rows) + 3 > size:
-            if selected < size / 2:
-                rows = rows[:size]
-            elif selected + size / 2 > len(items):
-                rows = rows[-size:]
-                selected -= len(items) - size
-            else:
-                rows = rows[selected - size // 2 : selected + size // 2]
-                selected -= selected - size // 2
     
     for i, row in enumerate(rows):
-        row[0] =  "[bold red]:arrow_forward:[/] " + row[0] if i == selected else " " + row[0]
+        row[0] =  "[bold red]:arrow_forward:[/]" + row[0] if i == selected else " " + row[0]
         table.add_row(*row, style=SELECTED if i == selected else "bold white")
-        # table.add_row(*row)
-
+ 
     layout_results["table"].update(table)
     layout_results["description"].update(make_description_panel(descriptions[selected]))
     
     return layout_results
+
+def MetadataHighlighter(text, metadata: Metadata) -> Text :
+    """Apply style Highlight to all text  matches metadata and return a `Text` object"""
+    
+    highlighted = Text(text, justify="full")
+    highlighted.highlight_words(metadata.keywords, style = "white on green4", case_sensitive=False)
+    highlighted.highlight_words(metadata.quality, style = "white on green4", case_sensitive=False)
+    highlighted.highlight_words(metadata.codec, style = "white on green4", case_sensitive=False)
+    
+    return highlighted
+
+def paginate(items, per_page):
+    """ Paginate `items` in perpage lists 
+    and return a `Dict` with:
+     * Total items
+     * Number of pages
+     * Per page amount
+     * List of pages
+    """
+    pages = [items[i:i+per_page] for i in range(0, len(items), per_page)]
+    return {
+        'total': len(items),
+        'pages_no': len(pages),
+        'per_page': per_page,
+        'pages': pages
+    }
