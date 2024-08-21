@@ -199,14 +199,14 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 
         except KeyboardInterrupt:
             logger.debug('Interrupted by user')
-            console.print(":cross_mark: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+            console.print(":stop_sign: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
             exit(1)
 
         if (res == -1):
             logger.debug('Download Canceled')
-            console.print("\r\n" + ":cross_mark: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+            console.print("\r\n" + ":stop_sign: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
             time.sleep(0.8)
             clean_screen()
             exit(0)
@@ -281,14 +281,14 @@ def get_subtitle(url, topath):
                                 show_choices=False, show_default=True, choices=choices, default=0)
                 except KeyboardInterrupt:
                     logger.debug('Interrupted by user')
-                    console.print(":cross_mark: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+                    console.print(":stop_sign: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
                     time.sleep(0.5)
                     clean_screen()
                     exit(1)
             
                 if (res == count + 1):
                     logger.debug('Canceled Download Subtitle')
-                    console.print(":cross_mark: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+                    console.print(":stop_sign: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
                     temp_file.close()
                     os.unlink(temp_file.name)
                     time.sleep(2)
