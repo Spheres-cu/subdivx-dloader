@@ -386,12 +386,12 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
                   caption="[[bold green]:arrow_down:[/]] BAJAR [[bold green]:arrow_up:[/]] SUBIR [[bold green]-:arrow_forward:[/]] SIGTE " \
                    "[[bold green]:arrow_backward:- [/]] ATRÁS [[bold green]:right_arrow_curving_left:[/] ] DESCARGAR\n\n" \
                    "[[bold green]D[/]] VER DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
-                   "[italic] Mostrando página [bold white on medium_purple4] " + str(page + 1) +" [/] de [bold]" + str(results['pages_no']) + "[/] " \
+                   "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold]" + str(results['pages_no']) + "[/] " \
                     "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                     title_style="bold green",
-                  show_header=True, header_style="bold yellow", caption_style="bold yellow", show_lines=False)
+                  show_header=True, header_style="bold yellow", caption_style="bold bright_yellow", show_lines=False)
     table.add_column("#", justify="right", vertical="middle", style="bold green")
-    table.add_column("Título", justify="left", vertical="middle", style="bold white")
+    table.add_column("Título", justify="left", vertical="middle", style="white")
     table.add_column("Descargas", justify="center", vertical="middle")
     table.add_column("Usuario", justify="center", vertical="middle")
     table.add_column("Fecha", justify="center", vertical="middle")
