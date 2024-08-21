@@ -138,23 +138,15 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     # Construct Table for console output
     
     table_title = str(title) + " " + str(number).upper()
+    results_pages = paginate(results, 10)
 
     if (no_choose==False):
-        count = 0
-        url_ids = []
-    
-        for item in results:
-            try:
-                url_ids.append(item['id'])
-                # descriptions.append(tr.fill(highlight_text(item['descripcion'], metadata), width=77))
-
-            except IndexError:
-                pass
-            count = count + 1
+        
         try:
             selected = 0
+            page = 0
             with Live(
-                generate_results (console, table_title, results, metadata, selected),auto_refresh=False
+                generate_results (table_title, results_pages, metadata, page, selected),auto_refresh=False
             ) as live:
                 while True:
                     ch = readkey()
@@ -162,17 +154,26 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                         selected = max(0, selected - 1)
 
                     if ch == key.DOWN or ch == key.PAGE_DOWN:
-                        selected = min(count - 1, selected + 1)
+                        selected = min(len(results_pages['pages'][page]) - 1, selected + 1)
+
+                    if ch == key.RIGHT :
+                        page = min(results_pages["pages_no"] - 1, page + 1)
+                        selected = 0
+
+                    if ch == key.LEFT :
+                        page = max(0, page - 1)
+                        selected = 0
 
                     if ch == key.ENTER:
                         live.stop()
-                        res = selected
+                        res = results_pages['pages'][page][selected]['id']
+                        logger.debug(f'res: {res}')
                         break
-                    if ch == "s" or ch == "S":
+                    if ch in ["S", "s"]:
                         live.stop()
                         res = -1
                         break
-                    live.update(generate_results(console, table_title, results, metadata, selected), refresh=True)
+                    live.update(generate_results(table_title, results_pages, metadata, page, selected), refresh=True)
 
         except KeyboardInterrupt:
             logger.debug('Interrupted by user')
@@ -189,10 +190,10 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
             time.sleep(0.8)
             clean_screen()
             exit(0)
-        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[res])
+        url = SUBDIVX_DOWNLOAD_PAGE + str(res)
     else:
         # get first subtitle
-        url = SUBDIVX_DOWNLOAD_PAGE + str(url_ids[0])
+        url = SUBDIVX_DOWNLOAD_PAGE + str(results_pages['pages'][0][0]['id'])
     print("\r")
     # get download page
     if (s.request("GET", url).status == 200):
