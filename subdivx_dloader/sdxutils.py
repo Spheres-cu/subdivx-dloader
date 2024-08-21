@@ -380,7 +380,7 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
     table.add_column("Usuario", justify="center", vertical="middle")
     table.add_column("Fecha", justify="center", vertical="middle")
 
-    count = page * 10
+    count = page * results['per_page']
     rows = []
     descriptions = []
  
@@ -410,7 +410,7 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
 def MetadataHighlighter(text, metadata: Metadata) -> Text :
     """Apply style Highlight to all text  matches metadata and return a `Text` object"""
     
-    highlighted = Text(text, justify="full")
+    highlighted = Text(text, justify="center")
     highlighted.highlight_words(metadata.keywords, style = "white on green4", case_sensitive=False)
     highlighted.highlight_words(metadata.quality, style = "white on green4", case_sensitive=False)
     highlighted.highlight_words(metadata.codec, style = "white on green4", case_sensitive=False)
