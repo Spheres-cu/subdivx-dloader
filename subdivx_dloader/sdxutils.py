@@ -10,6 +10,7 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 from rich import box
 from rich.layout import Layout
+from rich.console import Group
 from rich.panel import Panel
 from rich.style import Style
 from rich.table import Table
@@ -57,7 +58,7 @@ class NoResultsError(Exception):
 # Setting Loggers
 LOGGER_LEVEL = logging.DEBUG
 LOGGER_FORMATTER_LONG = logging.Formatter('%(asctime)-12s %(levelname)-6s %(message)s', '%Y-%m-%d %H:%M:%S')
-LOGGER_FORMATTER_SHORT = logging.Formatter('| %(levelname)s | %(message)s')
+LOGGER_FORMATTER_SHORT = logging.Formatter(fmt='%(message)s', datefmt="[%X]")
 
 temp_log_dir = tempfile.gettempdir()
 file_log = os.path.join(temp_log_dir, 'subdivx-dloader.log')
@@ -339,8 +340,21 @@ def make_layout() -> Layout:
 
     layout.split_column(
         Layout(name="table"),
-        Layout(name="description", size=8, ratio=1),
     )
+    return layout
+
+def make_screen_layout() -> Layout:
+    """Define a screen layout."""
+    layout = Layout(name="screen")
+
+    layout.split_column(
+        Layout(name="subtitle"),
+        Layout(name="description", size=8, ratio=1),
+        Layout(name="caption")
+    )
+    layout["subtitle"].update("")
+    layout["caption"].update(Align.center("[italic yellow] Oprima: [[bold green]S[/]] PARA IR ATRÁS [/]", vertical="middle"))
+
     return layout
 
 def make_description_panel(description) -> Panel:
@@ -348,8 +362,10 @@ def make_description_panel(description) -> Panel:
     descriptions = Table.grid(padding=1)
     descriptions.add_column()
     descriptions.add_row(description)
-    descriptions_panel = Panel(
-        Align.center(descriptions, vertical = "middle"),
+    descriptions_panel = Panel.fit(
+        Align.center(
+            Group(Align.center(descriptions)), vertical = "middle"
+        ),
         box = box.ROUNDED,
         title = "[bold yellow]Descripción:[/]",
         title_align = "left",
@@ -360,7 +376,6 @@ def make_description_panel(description) -> Panel:
 
     return descriptions_panel
 
-
 def generate_results(title, results, metadata: Metadata, page, selected) -> Layout:
     """Generate Selectable results Table"""
 
@@ -368,10 +383,11 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
-                  caption="[[bold red]:arrow_forward:[/]]:SELECCIÓN | [[bold green]:arrow_down::arrow_up: -:arrow_forward: " \
-                    ":arrow_backward:- [/]]: MOVERSE | " \
-                   "[[bold green]:right_arrow_curving_left:[/] ] DESCARGAR [[bold green]S[/]] SALIR \n" \
-                    "[italic] Mostrando página " + str(page + 1) +" de " + str(results['pages_no']) + " de " + str(results['total']) + " resultado(s)[/]",
+                  caption="[[bold green]:arrow_down:[/]] BAJAR [[bold green]:arrow_up:[/]] SUBIR [[bold green]-:arrow_forward:[/]] SIGTE " \
+                   "[[bold green]:arrow_backward:- [/]] ATRÁS [[bold green]:right_arrow_curving_left:[/] ] DESCARGAR\n\n" \
+                   "[[bold green]D[/]] VER DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
+                   "[italic] Mostrando página [bold white on medium_purple4] " + str(page + 1) +" [/] de [bold]" + str(results['pages_no']) + "[/] " \
+                    "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                     title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="bold yellow", show_lines=False)
     table.add_column("#", justify="right", vertical="middle", style="bold green")
@@ -382,7 +398,6 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
 
     count = page * results['per_page']
     rows = []
-    descriptions = []
  
     for item in results['pages'][page]:
         try:
@@ -390,7 +405,6 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
             descargas = str(item['descargas'])
             usuario = str(item['nick'])
             fecha = str(item['fecha_subida'])
-            descriptions.append(MetadataHighlighter(item['descripcion'], metadata))
 
             items = [str(count + 1), titulo, descargas, usuario, fecha]
             rows.append(items)
@@ -403,7 +417,6 @@ def generate_results(title, results, metadata: Metadata, page, selected) -> Layo
         table.add_row(*row, style=SELECTED if i == selected else "bold white")
  
     layout_results["table"].update(table)
-    layout_results["description"].update(make_description_panel(descriptions[selected]))
     
     return layout_results
 
