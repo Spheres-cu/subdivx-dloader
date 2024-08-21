@@ -5,6 +5,7 @@ import sys
 import argparse
 from .sdxlib import *
 from guessit import guessit
+from rich.logging import RichHandler
 from .sdxlib import _sub_extensions
 from tvnamer.utils import FileFinder
 from contextlib import contextmanager
@@ -99,7 +100,8 @@ def main():
     logger.addHandler(logfile)
 
     if not args.quiet:
-        console = logging.StreamHandler()
+        # console = logging.StreamHandler()
+        console = RichHandler(rich_tracebacks=True, tracebacks_show_locals=True)
         console.setFormatter(LOGGER_FORMATTER_SHORT)
         console.setLevel(logging.INFO if not args.verbose else logging.DEBUG)
         logger.addHandler(console)
@@ -123,7 +125,7 @@ def main():
                     break
     
         if exists_sub:
-            logger.info(f'Subtitle already exits use -f for force downloading')
+            logger.error(f'Subtitle already exits use -f for force downloading')
             continue
 
         filename = os.path.basename(filepath)
