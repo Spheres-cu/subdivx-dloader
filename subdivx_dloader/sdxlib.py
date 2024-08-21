@@ -34,7 +34,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     console.print("\r")
     logger.debug(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
     with console.status(f'Searching subtitles for: ' + str(title) + " " + str(number).upper()):
-        """try:
+        try:
             page = s.request(
                 'POST',
                 SUBDIVX_SEARCH_URL,
@@ -86,7 +86,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     else:
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
     
-    """" ####### For testing ########## """
+    """" ####### For testing ########## 
     page = load_aadata()
     aaData = json.loads(page)['aaData']
     aaData_Items = get_list_Dict(aaData)
