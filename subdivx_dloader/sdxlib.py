@@ -175,7 +175,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                             while True:
                                 screen.update(layout_description)
                                 ch_exit = readkey()
-                                if ch_exit in ["S", "s"]:
+                                if ch_exit in ["A", "a"]:
                                     break
 
                     if ch == key.RIGHT :
