@@ -353,7 +353,7 @@ def make_screen_layout() -> Layout:
         Layout(name="caption")
     )
     layout["subtitle"].update("")
-    layout["caption"].update(Align.center("[italic yellow] Oprima: [[bold green]S[/]] PARA IR ATRÁS [/]", vertical="middle"))
+    layout["caption"].update(Align.center("[italic yellow] Oprima: [[bold green]A[/]] PARA IR ATRÁS [/]", vertical="middle"))
 
     return layout
 
