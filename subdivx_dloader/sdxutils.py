@@ -353,7 +353,8 @@ def make_screen_layout() -> Layout:
         Layout(name="caption")
     )
     layout["subtitle"].update("")
-    layout["caption"].update(Align.center("[italic yellow] Oprima: [[bold green]A[/]] PARA IR ATRÁS [/]", vertical="middle"))
+    layout["caption"].update(Align.center("[italic yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
+                                          "[[bold green]A[/]] PARA IR ATRÁS [/]", vertical="middle"))
 
     return layout
 
@@ -376,7 +377,7 @@ def make_description_panel(description) -> Panel:
 
     return descriptions_panel
 
-def generate_results(title, results, metadata: Metadata, page, selected) -> Layout:
+def generate_results(title, results, page, selected) -> Layout:
     """Generate Selectable results Table"""
 
     SELECTED = Style(color="green", bgcolor="medium_purple4", bold=True)
