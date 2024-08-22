@@ -146,8 +146,9 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         try:
             selected = 0
             page = 0
+            res = 0
             with Live(
-                generate_results (table_title, results_pages, metadata, page, selected),auto_refresh=False, transient=True
+                generate_results (table_title, results_pages, page, selected),auto_refresh=False, transient=True
             ) as live:
                 while True:
                     ch = readkey()
@@ -160,7 +161,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                     if ch in ["D", "d"]:
                         description_selected = results_pages['pages'][page][selected]['descripcion']
                         subtitle_selected =  results_pages['pages'][page][selected]['titulo']
-                        description = MetadataHighlighter(description_selected, metadata)
+                        description = highlight_text(description_selected, metadata)
 
                         layout_description = make_screen_layout()
                         layout_description["description"].update(make_description_panel(description))
@@ -174,9 +175,16 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                         with console.screen() as screen: 
                             while True:
                                 screen.update(layout_description)
+
                                 ch_exit = readkey()
                                 if ch_exit in ["A", "a"]:
                                     break
+
+                                if ch_exit in ["D", "d"]:
+                                    res = results_pages['pages'][page][selected]['id']
+                                    break
+                                    
+                        if res != 0: break
 
                     if ch == key.RIGHT :
                         page = min(results_pages["pages_no"] - 1, page + 1)
@@ -195,7 +203,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                         live.stop()
                         res = -1
                         break
-                    live.update(generate_results(table_title, results_pages, metadata, page, selected), refresh=True)
+                    live.update(generate_results(table_title, results_pages, page, selected), refresh=True)
 
         except KeyboardInterrupt:
             logger.debug('Interrupted by user')
