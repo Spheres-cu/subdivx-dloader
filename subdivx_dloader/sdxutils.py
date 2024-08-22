@@ -353,7 +353,7 @@ def make_screen_layout() -> Layout:
         Layout(name="caption")
     )
     layout["subtitle"].update("")
-    layout["caption"].update(Align.center("[italic yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
+    layout["caption"].update(Align.center("[italic bright_yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
                                           "[[bold green]A[/]] PARA IR ATRÁS [/]", vertical="middle"))
 
     return layout
@@ -370,7 +370,7 @@ def make_description_panel(description) -> Panel:
         box = box.ROUNDED,
         title = "[bold yellow]Descripción:[/]",
         title_align = "left",
-        subtitle = "[white on green4]Coincidencias][/] [italic yellow]con los metadatos del archivo[/]",
+        subtitle = "[white on green4]Coincidencias[/] [italic bright_yellow]con los metadatos del archivo[/]",
         subtitle_align = "center",
         padding = 1 
     )
@@ -387,7 +387,7 @@ def generate_results(title, results, page, selected) -> Layout:
                   caption="[[bold green]:arrow_down:[/]] BAJAR [[bold green]:arrow_up:[/]] SUBIR [[bold green]-:arrow_forward:[/]] SIGTE " \
                    "[[bold green]:arrow_backward:- [/]] ATRÁS [[bold green]:right_arrow_curving_left:[/] ] DESCARGAR\n\n" \
                    "[[bold green]D[/]] VER DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
-                   "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold]" + str(results['pages_no']) + "[/] " \
+                   "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
                     "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                     title_style="bold green",
                   show_header=True, header_style="bold yellow", caption_style="bold bright_yellow", show_lines=False)
