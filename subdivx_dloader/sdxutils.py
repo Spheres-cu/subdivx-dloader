@@ -370,7 +370,7 @@ def make_description_panel(description) -> Panel:
         box = box.ROUNDED,
         title = "[bold yellow]Descripción:[/]",
         title_align = "left",
-        subtitle = "[white on green4]Coincidencias[/] [italic yellow]con los metadatos del archivo[/]",
+        subtitle = "[white on green4]Coincidencias][/] [italic yellow]con los metadatos del archivo[/]",
         subtitle_align = "center",
         padding = 1 
     )
