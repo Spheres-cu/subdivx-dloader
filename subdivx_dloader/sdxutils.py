@@ -105,11 +105,11 @@ def match_text(title, number, inf_sub, text):
 
   # Perform searches
   r = True if re_full_pattern.search(text.strip()) else False
-#   logger.debug(f'FullMatch text: {text} Found: {r}')
+  logger.debug(f'FullMatch text: {text} Found: {r}')
 
   if not r :
     rtitle = True if re_title_pattern.search(text.strip()) else False
-    # logger.debug(f'Title Match: {title} Found: {rtitle}')
+    logger.debug(f'Title Match: {title} Found: {rtitle}')
 
     for num in number.split(" "):
         if not inf_sub['season']:
@@ -117,7 +117,7 @@ def match_text(title, number, inf_sub, text):
         else:
            rnumber = True if re.search(rf"\b{num}.*\b", text, re.I) else False
     
-    # logger.debug(f'Number Match: {number} Found: {rnumber}')
+    logger.debug(f'Number Match: {number} Found: {rnumber}')
 
     if inf_sub['type'] == "movie" :
         raka = True if re.search(rf"\b{aka}\b", text, re.I) else False
@@ -126,12 +126,12 @@ def match_text(title, number, inf_sub, text):
     else:
         r = True if rtitle and rnumber else False
 
-    # logger.debug(f'Partial Match text: {text}: {r}')
+    logger.debug(f'Partial Match text: {text}: {r}')
 
   if not r:
     if all(re.search(rf"\b{word}\b", text, re.I) for word in search.split()) :
-        r = True
-    # logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
+        r = True  if rnumber and raka else False
+    logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
        
   return r 
 
