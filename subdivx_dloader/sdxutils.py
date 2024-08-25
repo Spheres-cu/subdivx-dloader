@@ -6,6 +6,7 @@ import certifi
 import urllib3
 import tempfile
 import logging.handlers
+from urllib3.exceptions import HTTPError
 from collections import namedtuple
 from datetime import datetime, timedelta
 from rich import box
@@ -16,6 +17,8 @@ from rich.style import Style
 from rich.table import Table
 from rich.align import Align
 from rich.text import Text
+from rich.traceback import install
+install(show_locals=True)
 
 from .sdxlib import console
 
@@ -232,7 +235,7 @@ def get_clean_results(list_results):
 
     return list_Subs_dict_results
 
-def Network_Connection_Error(e) -> str:
+def Network_Connection_Error(e: HTTPError) -> str:
     """ Return a Network Connection Error message """
     msg = e.__str__()
     error_class = e.__class__.__name__
@@ -246,6 +249,17 @@ def Network_Connection_Error(e) -> str:
     }
     error_msg = f'{error_class} : {Network_error_msg[error_class] if error_class in Network_error_msg else msg }'
     return error_msg
+
+def HTTPErrorsMessageException(e: HTTPError):
+    """ Manage HTTP Network connection Errors Exceptions message:
+        * Log HTTP Network connection Error message
+        * Print to stdout HTTP Network connection error message
+    """
+    msg = Network_Connection_Error(e)
+    console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
+
+    if LOGGER_LEVEL == logging.DEBUG:
+        logger.debug(f'Network Connection Error occurred: {msg}')
 
 sdxcookie_name = 'sdx-cookie'
 
@@ -279,11 +293,8 @@ def get_Cookie():
     logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
     try:
         cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
-    except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
-        msg = Network_Connection_Error(e)
-        console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
-        if LOGGER_LEVEL == logging.DEBUG:
-           logger.debug(f'Network Connection Error occurred: {msg}')
+    except HTTPError as e:
+        HTTPErrorsMessageException(e)
         exit(1)
 
     return cookie_sdx
@@ -384,9 +395,9 @@ def generate_results(title, results, page, selected) -> Layout:
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
-                caption="[[bold green]:arrow_down:[/]] BAJAR [[bold green]:arrow_up:[/]] SUBIR [[bold green]-:arrow_forward:[/]] SIGTE " \
-                "[[bold green]:arrow_backward:- [/]] ATRÁS [[bold green]:right_arrow_curving_left:[/] ] DESCARGAR\n\n" \
-                "[[bold green]D[/]] VER DESCRIPCIÓN [[bold green]S[/]] SALIR\n\n" \
+                caption="MOVERSE: [bold green]:arrow_down:[/] [bold green]:arrow_up:[/] [bold green]-:arrow_forward:[/] [bold green]:arrow_backward:-[/] | " \
+                "DESCARGAR: [bold green]:right_arrow_curving_left:[/]\n\n" \
+                "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
                 "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
                 "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                 title_style="bold green",
@@ -447,3 +458,5 @@ def paginate(items, per_page):
         'per_page': per_page,
         'pages': pages
     }
+
+
