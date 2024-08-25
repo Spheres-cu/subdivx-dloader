@@ -42,11 +42,8 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
                 fields=fields
             ).data
 
-        except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
-            msg = Network_Connection_Error(e)
-            console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
-            if LOGGER_LEVEL == logging.DEBUG:
-               logger.debug(f'Network Connection Error occurred: {msg}')
+        except HTTPError as e:
+            HTTPErrorsMessageException(e)
             exit(1)
 
         try:
@@ -224,9 +221,13 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         url = SUBDIVX_DOWNLOAD_PAGE + str(results_pages['pages'][0][0]['id'])
     print("\r")
     # get download page
-    if (s.request("GET", url).status == 200):
-      logger.debug(f"Getting url from: {url}")
-      return url
+    try:
+        if (s.request("GET", url).status == 200):
+          logger.debug(f"Getting url from: {url}")
+          return url
+    except HTTPError as e:
+        HTTPErrorsMessageException(e)
+        exit(1)
 
 def get_subtitle(url, topath):
     """Download subtitles from ``url`` to a destination ``path``"""
@@ -244,11 +245,8 @@ def get_subtitle(url, topath):
             try:
                 temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
                 temp_file.seek(0)
-            except (urllib3.exceptions.NewConnectionError, urllib3.exceptions.TimeoutError, urllib3.exceptions.ProxyError, urllib3.exceptions.HTTPError) as e:
-                msg = Network_Connection_Error(e)
-                console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
-                if LOGGER_LEVEL == logging.DEBUG:
-                    logger.debug(f'Network Connection Error occurred: {msg}')
+            except HTTPError as e:
+                HTTPErrorsMessageException(e)
                 exit(1)
 
         # Checking if the file is zip or rar then decompress
