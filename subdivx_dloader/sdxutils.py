@@ -135,6 +135,11 @@ def match_text(title, number, inf_sub, text):
     if all(re.search(rf"\b{word}\b", text, re.I) for word in search.split()) :
         r = True  if rnumber and raka else False
     logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
+
+  if not r:
+    if all(re.search(rf"\b{word}\b", text, re.I) for word in title.split()) :
+        r = True  if rnumber else False
+    logger.debug(f'All Words Match title and number: {title.split()} in {text}: {r}')
        
   return r 
 
