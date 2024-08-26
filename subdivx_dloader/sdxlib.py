@@ -2,8 +2,6 @@
 import os
 import json
 import time
-from rich import box
-from rich.table import Table
 from rich.prompt import IntPrompt
 from .console import console
 from json import JSONDecodeError
@@ -144,13 +142,14 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         url = SUBDIVX_DOWNLOAD_PAGE + str(results_pages['pages'][0][0]['id'])
     print("\r")
     # get download page
-    try:
-        if (s.request("GET", url).status == 200):
-          logger.debug(f"Getting url from: {url}")
-          return url
-    except HTTPError as e:
-        HTTPErrorsMessageException(e)
-        exit(1)
+    with console.status("Checking download url... ", spinner="earth"):
+        try:
+            if (s.request("GET", url).status == 200):
+                logger.debug(f"Getting url from: {url}")
+                return url
+        except HTTPError as e:
+            HTTPErrorsMessageException(e)
+            exit(1)
 
 def get_subtitle(url, topath):
     """Download subtitles from ``url`` to a destination ``path``"""
