@@ -7,6 +7,7 @@ import certifi
 import urllib3
 import tempfile
 import logging.handlers
+import html2text
 from urllib3.exceptions import HTTPError
 from collections import namedtuple
 from datetime import datetime, timedelta
@@ -97,10 +98,11 @@ def match_text(title, number, inf_sub, text):
   """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
 
   #Setting Patterns
-  special_char = ["`", "'", "´", ":", ".", "?", "&"]
+  special_char = ["`", "'", "´", ":", ".", "?"]
   for i in special_char:
       title = title.replace(i, '')
       text = text.replace(i, '')
+  text = str(html2text.html2text(text)).strip()
   aka = "aka"
   search = f"{title} {number}"
   
@@ -252,6 +254,7 @@ def Network_Connection_Error(e: HTTPError) -> str:
         'NameResolutionError' : 'Failed to resolve www.subdivx.com',
         'ProxyError' : "Unable to connect to proxy",
         'NewConnectionError' : "Failed to establish a new connection",
+        'ProtocolError'      : "Connection aborted. Remote end closed connection without response",
         'HTTPError' : msg
     }
     error_msg = f'{error_class} : {Network_error_msg[error_class] if error_class in Network_error_msg else msg }'
@@ -370,7 +373,6 @@ def make_screen_layout() -> Layout:
         Layout(name="description", size=8, ratio=1),
         Layout(name="caption")
     )
-    layout["subtitle"].update("")
     layout["caption"].update(Align.center("[italic bright_yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
                                           "[[bold green]A[/]] PARA IR ATRÁS [/]", vertical="middle"))
 
@@ -381,7 +383,7 @@ def make_description_panel(description) -> Panel:
     descriptions = Table.grid(padding=1)
     descriptions.add_column()
     descriptions.add_row(description)
-    descriptions_panel = Panel.fit(
+    descriptions_panel = Panel(
         Align.center(
             Group(Align.center(descriptions)), vertical = "middle"
         ),
@@ -402,8 +404,8 @@ def generate_results(title, results, page, selected) -> Layout:
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
-                caption="MOVERSE: [bold green]:arrow_down:[/] [bold green]:arrow_up:[/] [bold green]-:arrow_forward:[/] [bold green]:arrow_backward:-[/] | " \
-                "DESCARGAR: [bold green]:right_arrow_curving_left:[/]\n\n" \
+                caption="MOVERSE: [[bold green] 🡫  🡩  🡪  🡨 [/]] | " \
+                "DESCARGAR: [ [bold green]:right_arrow_curving_left:[/] ]\n\n" \
                 "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
                 "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
                 "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
@@ -421,7 +423,7 @@ def generate_results(title, results, page, selected) -> Layout:
  
     for item in results['pages'][page]:
         try:
-            titulo = str(item['titulo'])
+            titulo = str(html2text.html2text(item['titulo'])).strip()
             descargas = str(item['descargas'])
             usuario = str(item['nick'])
             fecha = str(item['fecha_subida'])
@@ -487,12 +489,13 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                 if ch in ["D", "d"]:
                     description_selected = results_pages['pages'][page][selected]['descripcion']
                     subtitle_selected =  results_pages['pages'][page][selected]['titulo']
-                    description = highlight_text(description_selected, metadata)
+                    description = str(html2text.html2text(description_selected)).strip()
+                    description = highlight_text(description, metadata)
 
                     layout_description = make_screen_layout()
                     layout_description["description"].update(make_description_panel(description))
                     layout_description["subtitle"].update(Align.center(
-                                "Subtítulo: " + str(subtitle_selected),
+                                "Subtítulo: " + str(html2text.html2text(subtitle_selected)).strip(),
                                 vertical="middle",
                                 style="italic bold green"
                                 )
