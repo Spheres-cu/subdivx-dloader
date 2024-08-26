@@ -1,6 +1,7 @@
 
 import os
 import re
+import time
 import logging
 import certifi
 import urllib3
@@ -17,10 +18,11 @@ from rich.style import Style
 from rich.table import Table
 from rich.align import Align
 from rich.text import Text
+from rich.live import Live
+from .console import console
+from readchar import readkey, key
 from rich.traceback import install
-install(show_locals=True)
-
-from .sdxlib import console
+install(show_locals=False)
 
 #obtained from http://flexget.com/wiki/Plugins/quality
 _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
@@ -258,7 +260,7 @@ def Network_Connection_Error(e: HTTPError) -> str:
 def HTTPErrorsMessageException(e: HTTPError):
     """ Manage HTTP Network connection Errors Exceptions message:
         * Log HTTP Network connection Error message
-        * Print to stdout HTTP Network connection error message
+        * Print HTTP Network connection error message
     """
     msg = Network_Connection_Error(e)
     console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
@@ -464,4 +466,83 @@ def paginate(items, per_page):
         'pages': pages
     }
 
+def get_selected_subtitle_id(table_title, results_pages, metadata):
+    """Show subtitles search results for obtain download id"""
 
+    try:
+        selected = 0
+        page = 0
+        res = 0
+        with Live(
+            generate_results (table_title, results_pages, page, selected),auto_refresh=False, transient=True
+        ) as live:
+            while True:
+                ch = readkey()
+                if ch == key.UP or ch == key.PAGE_UP:
+                    selected = max(0, selected - 1)
+
+                if ch == key.DOWN or ch == key.PAGE_DOWN:
+                    selected = min(len(results_pages['pages'][page]) - 1, selected + 1)
+
+                if ch in ["D", "d"]:
+                    description_selected = results_pages['pages'][page][selected]['descripcion']
+                    subtitle_selected =  results_pages['pages'][page][selected]['titulo']
+                    description = highlight_text(description_selected, metadata)
+
+                    layout_description = make_screen_layout()
+                    layout_description["description"].update(make_description_panel(description))
+                    layout_description["subtitle"].update(Align.center(
+                                "Subtítulo: " + str(subtitle_selected),
+                                vertical="middle",
+                                style="italic bold green"
+                                )
+                    )
+
+                    with console.screen() as screen: 
+                        while True:
+                            screen.update(layout_description)
+
+                            ch_exit = readkey()
+                            if ch_exit in ["A", "a"]:
+                                break
+
+                            if ch_exit in ["D", "d"]:
+                                res = results_pages['pages'][page][selected]['id']
+                                break
+                                
+                    if res != 0: break
+
+                if ch == key.RIGHT :
+                    page = min(results_pages["pages_no"] - 1, page + 1)
+                    selected = 0
+
+                if ch == key.LEFT :
+                    page = max(0, page - 1)
+                    selected = 0
+
+                if ch == key.ENTER:
+                    live.stop()
+                    res = results_pages['pages'][page][selected]['id']
+                    break
+
+                if ch in ["S", "s"]:
+                    live.stop()
+                    res = -1
+                    break
+                live.update(generate_results(table_title, results_pages, page, selected), refresh=True)
+
+    except KeyboardInterrupt:
+        logger.debug('Interrupted by user')
+        console.print(":x: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+        time.sleep(0.8)
+        clean_screen()
+        exit(1)
+
+    if (res == -1):
+        logger.debug('Download Canceled')
+        console.print("\r\n" + ":x: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+        time.sleep(0.8)
+        clean_screen()
+        exit(0)
+
+    return res
