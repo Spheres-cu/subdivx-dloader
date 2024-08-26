@@ -232,16 +232,15 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
 def get_subtitle(url, topath):
     """Download subtitles from ``url`` to a destination ``path``"""
     
+    clean_screen()
     temp_file = NamedTemporaryFile(delete=False)
     SUCCESS = False
 
     # get direct download link
-    clean_screen()
-    for i in range ( 9, 0, -1 ):
-
-        logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+    with console.status("Downloading Subtitle... ", spinner="dots4"):
         # Download file
-        with console.status("Downloading Subtitle... ", spinner="dots4"):
+        for i in range ( 9, 0, -1 ):
+            logger.debug(f"Trying Download from link: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
             try:
                 temp_file.write(s.request('GET', SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:], headers=headers).data)
                 temp_file.seek(0)
@@ -249,101 +248,104 @@ def get_subtitle(url, topath):
                 HTTPErrorsMessageException(e)
                 exit(1)
 
-        # Checking if the file is zip or rar then decompress
-        compressed_sub_file = ZipFile(temp_file) if is_zipfile(temp_file.name) else RarFile(temp_file) if is_rarfile(temp_file.name) else None
+            # Checking if the file is zip or rar then decompress
+            compressed_sub_file = ZipFile(temp_file) if is_zipfile(temp_file.name) else RarFile(temp_file) if is_rarfile(temp_file.name) else None
 
-        if compressed_sub_file is not None:
-            SUCCESS = True
-            logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
-
-            # In case of existence of various subtitles choose which to download
-            if len(compressed_sub_file.infolist()) > 1 :
-                clean_screen()
-                count = 0
-                choices = []
-                choices.append(str(count))
-                list_sub = []
-                table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
-                            header_style="bold yellow", show_lines=True, title_justify='center')
-                table.add_column("#", justify="center", vertical="middle", style="bold green")
-                table.add_column("Subtítulos", justify="center" , no_wrap=True)
-
-                for i in compressed_sub_file.infolist():
-                    if i.is_dir() or os.path.basename(i.filename).startswith("._"):
-                        continue
-                    i.filename = os.path.basename(i.filename)
-                    list_sub.append(i.filename)
-                    table.add_row(str(count + 1), str(i.filename))
-                    count += 1
-                    choices.append(str(count))
-            
-                choices.append(str(count + 1))
-                console.print(table)
-                console.print("[bold green]>> [0] Descargar todos\r", new_line_start=True)
-                console.print("[bold red]>> [" + str(count + 1) + "] Cancelar descarga\r", new_line_start=True)
-
-                try:
-                    res = IntPrompt.ask("[bold yellow]>> Elija un [" + "[bold green]#" + "][bold yellow]. Por defecto:", 
-                                show_choices=False, show_default=True, choices=choices, default=0)
-                except KeyboardInterrupt:
-                    logger.debug('Interrupted by user')
-                    console.print(":x: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
-                    time.sleep(0.5)
-                    clean_screen()
-                    exit(1)
-            
-                if (res == count + 1):
-                    logger.debug('Canceled Download Subtitle')
-                    console.print(":x: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
-                    temp_file.close()
-                    os.unlink(temp_file.name)
-                    time.sleep(2)
-                    clean_screen()
-                    exit(0)
-
-                logger.debug('Decompressing files')
-                if res == 0:
-                    with compressed_sub_file as csf:
-                        for sub in csf.infolist():
-                            if not sub.is_dir():
-                                sub.filename = os.path.basename(sub.filename)
-                            if any(sub.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub.filename:
-                                logger.debug(' '.join(['Decompressing subtitle:', sub.filename, 'to', os.path.dirname(topath)]))
-                                csf.extract(sub, os.path.dirname(topath))
-                    compressed_sub_file.close()
-                else:
-                    if any(list_sub[res - 1].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res - 1]:
-                        with compressed_sub_file as csf:
-                            for sub in csf.infolist():
-                                if not sub.is_dir():
-                                    sub.filename = os.path.basename(sub.filename)
-                                    if list_sub[res - 1] == sub.filename :
-                                        logger.debug(' '.join(['Decompressing subtitle:', list_sub[res - 1], 'to', os.path.dirname(topath)]))
-                                        csf.extract(sub, os.path.dirname(topath))
-                                        break
-                    compressed_sub_file.close()
-                logger.debug(f"Done extract subtitles!")
-                console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+            if compressed_sub_file is not None:
+                SUCCESS = True
+                logger.debug(f"Downloaded from: {SUBDIVX_DOWNLOAD_PAGE + 'sub' + str(i) + '/' + url[24:]}")
+                break
             else:
-                for name in compressed_sub_file.infolist():
-                    # don't unzip stub __MACOSX folders
-                    if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
-                        logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
-                        compressed_sub_file.extract(name, os.path.dirname(topath))
-                compressed_sub_file.close()
-                logger.debug(f"Done extract subtitle!")
-                console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
-            break
-        else:
-            SUCCESS = False
-            time.sleep(2)
+                SUCCESS = False
+                time.sleep(2)
+
+    if not SUCCESS :
+        temp_file.close()
+        os.unlink(temp_file.name)
+        raise NoResultsError(f'No suitable subtitle download for : "{url}"')
     
+    # In case of existence of various subtitles choose which to download
+    if len(compressed_sub_file.infolist()) > 1 :
+        clean_screen()
+        count = 0
+        choices = []
+        choices.append(str(count))
+        list_sub = []
+        table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
+                    header_style="bold yellow", show_lines=True, title_justify='center')
+        table.add_column("#", justify="center", vertical="middle", style="bold green")
+        table.add_column("Subtítulos", justify="center" , no_wrap=True)
+
+        for i in compressed_sub_file.infolist():
+            if i.is_dir() or os.path.basename(i.filename).startswith("._"):
+                continue
+            i.filename = os.path.basename(i.filename)
+            list_sub.append(i.filename)
+            table.add_row(str(count + 1), str(i.filename))
+            count += 1
+            choices.append(str(count))
+    
+        choices.append(str(count + 1))
+        console.print(table)
+        console.print("[bold green]>> [0] Descargar todos\r", new_line_start=True)
+        console.print("[bold red]>> [" + str(count + 1) + "] Cancelar descarga\r", new_line_start=True)
+
+        try:
+            res = IntPrompt.ask("[bold yellow]>> Elija un [" + "[bold green]#" + "][bold yellow]. Por defecto:", 
+                        show_choices=False, show_default=True, choices=choices, default=0)
+        except KeyboardInterrupt:
+            logger.debug('Interrupted by user')
+            console.print(":x: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+            temp_file.close()
+            os.unlink(temp_file.name)
+            time.sleep(0.5)
+            clean_screen()
+            exit(1)
+    
+        if (res == count + 1):
+            logger.debug('Canceled Download Subtitle')
+            console.print(":x: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+            temp_file.close()
+            os.unlink(temp_file.name)
+            time.sleep(2)
+            clean_screen()
+            exit(0)
+
+        logger.debug('Decompressing files')
+        if res == 0:
+            with compressed_sub_file as csf:
+                for sub in csf.infolist():
+                    if not sub.is_dir():
+                        sub.filename = os.path.basename(sub.filename)
+                    if any(sub.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub.filename:
+                        logger.debug(' '.join(['Decompressing subtitle:', sub.filename, 'to', os.path.dirname(topath)]))
+                        csf.extract(sub, os.path.dirname(topath))
+            compressed_sub_file.close()
+        else:
+            if any(list_sub[res - 1].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res - 1]:
+                with compressed_sub_file as csf:
+                    for sub in csf.infolist():
+                        if not sub.is_dir():
+                            sub.filename = os.path.basename(sub.filename)
+                            if list_sub[res - 1] == sub.filename :
+                                logger.debug(' '.join(['Decompressing subtitle:', list_sub[res - 1], 'to', os.path.dirname(topath)]))
+                                csf.extract(sub, os.path.dirname(topath))
+                                break
+            compressed_sub_file.close()
+        logger.debug(f"Done extract subtitles!")
+        console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+    else:
+        for name in compressed_sub_file.infolist():
+            # don't unzip stub __MACOSX folders
+            if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
+                logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
+                compressed_sub_file.extract(name, os.path.dirname(topath))
+        compressed_sub_file.close()
+        logger.debug(f"Done extract subtitle!")
+        console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+
+    # Cleaning
     temp_file.close()
     os.unlink(temp_file.name)
-    
-    if not SUCCESS :
-        raise NoResultsError(f'No suitable subtitles download for : "{url}"')
-    
-    # Cleaning
     time.sleep(2)
     clean_screen()
