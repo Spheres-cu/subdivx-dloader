@@ -476,9 +476,10 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
         page = 0
         res = 0
         with Live(
-            generate_results (table_title, results_pages, page, selected),auto_refresh=False, transient=True
+            generate_results (table_title, results_pages, page, selected),auto_refresh=False, screen=True, transient=True
         ) as live:
             while True:
+                console.show_cursor(False)
                 ch = readkey()
                 if ch == key.UP or ch == key.PAGE_UP:
                     selected = max(0, selected - 1)
@@ -501,7 +502,7 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                                 )
                     )
 
-                    with console.screen() as screen: 
+                    with console.screen(hide_cursor=True) as screen: 
                         while True:
                             screen.update(layout_description)
 
@@ -526,11 +527,13 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                 if ch == key.ENTER:
                     live.stop()
                     res = results_pages['pages'][page][selected]['id']
+                    console.clear()
                     break
 
                 if ch in ["S", "s"]:
                     live.stop()
                     res = -1
+                    console.clear()
                     break
                 live.update(generate_results(table_title, results_pages, page, selected), refresh=True)
 
