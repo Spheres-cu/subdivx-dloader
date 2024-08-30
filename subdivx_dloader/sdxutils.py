@@ -400,12 +400,12 @@ def make_description_panel(description) -> Panel:
 def generate_results(title, results, page, selected) -> Layout:
     """Generate Selectable results Table"""
 
-    SELECTED = Style(color="green", bgcolor="medium_purple4", bold=True)
+    SELECTED = Style(color="green", bgcolor="gray35", bold=True)
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
-                caption="MOVERSE: [[bold green] 🡫  🡩  🡪  🡨 [/]] | " \
-                "DESCARGAR: [ [bold green]:right_arrow_curving_left:[/] ]\n\n" \
+                caption="MOVERSE: [[bold green] \u2193 \u2191 \u2192 \u2190 [/]] | " \
+                "DESCARGAR: [[bold green]Enter[/]]\n\n" \
                 "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
                 "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
                 "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
@@ -435,7 +435,7 @@ def generate_results(title, results, page, selected) -> Layout:
         count = count +1
     
     for i, row in enumerate(rows):
-        row[0] =  "[bold red]:arrow_forward:[/]" + row[0] if i == selected else " " + row[0]
+        row[0] =  "[bold red]>[/]" + row[0] if i == selected else " " + row[0]
         table.add_row(*row, style=SELECTED if i == selected else "bold white")
  
     layout_results["table"].update(table)
@@ -527,13 +527,13 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                 if ch == key.ENTER:
                     live.stop()
                     res = results_pages['pages'][page][selected]['id']
-                    console.clear()
+                    clean_screen()
                     break
 
                 if ch in ["S", "s"]:
                     live.stop()
                     res = -1
-                    console.clear()
+                    clean_screen()
                     break
                 live.update(generate_results(table_title, results_pages, page, selected), refresh=True)
 
