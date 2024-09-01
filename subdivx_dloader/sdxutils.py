@@ -435,7 +435,7 @@ def generate_results(title, results, page, selected) -> Layout:
         count = count +1
     
     for i, row in enumerate(rows):
-        row[0] =  "[bold red]>[/]" + row[0] if i == selected else " " + row[0]
+        row[0] =  "[bold red]\u25ba[/]" + row[0] if i == selected else " " + row[0]
         table.add_row(*row, style=SELECTED if i == selected else "bold white")
  
     layout_results["table"].update(table)
