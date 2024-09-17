@@ -4,9 +4,9 @@ import os
 import sys
 import argparse
 from .sdxlib import *
+from .sdxutils import _sub_extensions
 from guessit import guessit
 from rich.logging import RichHandler
-from .sdxlib import _sub_extensions
 from tvnamer.utils import FileFinder
 from contextlib import contextmanager
 
