@@ -2,15 +2,19 @@
 import os
 import re
 import time
+import json
 import logging
 import certifi
 import urllib3
 import tempfile
 import logging.handlers
 import html2text
+from json import JSONDecodeError
 from urllib3.exceptions import HTTPError
 from collections import namedtuple
 from datetime import datetime, timedelta
+from readchar import readkey, key
+from .console import console
 from rich import box
 from rich.layout import Layout
 from rich.console import Group
@@ -20,8 +24,7 @@ from rich.table import Table
 from rich.align import Align
 from rich.text import Text
 from rich.live import Live
-from .console import console
-from readchar import readkey, key
+from rich.prompt import IntPrompt
 from rich.traceback import install
 install(show_locals=False)
 
@@ -43,6 +46,8 @@ _keywords = (
 
 _codecs = ('xvid', 'x264', 'h264', 'x265', 'hevc')
 
+_sub_extensions = ['.srt', '.ssa']
+
 SUBDIVX_SEARCH_URL = 'https://www.subdivx.com/inc/ajax.php'
 
 SUBDIVX_DOWNLOAD_PAGE = 'https://www.subdivx.com/'
@@ -50,13 +55,15 @@ SUBDIVX_DOWNLOAD_PAGE = 'https://www.subdivx.com/'
 Metadata = namedtuple('Metadata', 'keywords quality codec')
 
 # Configure connections
-headers={"user-agent" : 
-         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"}
 
-s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
+headers={"user-agent" : 
+         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36 \
+            RuxitSynthetic/1.0 v6211797990607602692 t662062314270781625 ath259cea6f altpriv cvcv=2 smf=0"}
+
+s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=30)
 
 # Proxy: You must modify this configuration depending on the Proxy you use
-#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=15)
+#s = urllib3.ProxyManager('http://127.0.0.1:3128/', num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=30)
 
 class NoResultsError(Exception):
     pass
@@ -76,6 +83,70 @@ def setup_logger(level):
 
     logger.setLevel(level)
 
+### Setting cookies ###
+sdxcookie_name = 'sdx-cookie'
+
+def check_Cookie_Status():
+    """Check the time and existence of the `cookie` session and return it"""
+    cookie = load_Cookie()
+    if cookie is None or exp_time_Cookie is True: 
+        cookie = get_Cookie()
+        stor_Cookie(cookie)
+        cookie = load_Cookie()
+        logger.debug('Cookie Loaded')
+
+    return cookie
+
+def exp_time_Cookie():
+    """Compare modified time and return `True` if is expired"""
+    # Get cookie modified time and convert it to datetime
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    csdx_ti_m = datetime.fromtimestamp(os.path.getmtime(cookiesdx_path))
+    delta_csdx = datetime.now() - csdx_ti_m
+    exp_c_time = timedelta(hours=24)
+
+    if delta_csdx > exp_c_time:
+            return True 
+    else:
+        return False
+
+def get_Cookie():
+    """ Retrieve sdx cookie"""
+    logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
+    try:
+        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
+    except HTTPError as e:
+        HTTPErrorsMessageException(e)
+        exit(1)
+
+    return cookie_sdx
+
+def stor_Cookie(sdx_cookie):
+    """ Store sdx cookies """
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+
+    with open(cookiesdx_path, 'w') as file:
+        file.write(sdx_cookie)
+        file.close()
+    logger.debug('Store cookie')
+    
+def load_Cookie():
+    """ Load stored sdx cookies return ``None`` if not exists"""
+    temp_dir = tempfile.gettempdir()
+    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
+    if os.path.exists(cookiesdx_path):
+        with open(cookiesdx_path, 'r') as filecookie:
+            sdx_cookie = filecookie.read()
+    else:
+        return None
+
+    return sdx_cookie
+
+headers['Cookie'] = check_Cookie_Status()
+
+### sdxlib utils ###
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos""" 
@@ -172,7 +243,7 @@ def highlight_text(text,  metadata):
     return highlighted
 
 def backoff_delay(backoff_factor = 2, attempts = 2):
-    # backoff algorithm
+    """ backoff algorithm: backoff_factor * (2 ** attempts) """
     delay = backoff_factor * (2 ** attempts)
     return delay
 
@@ -271,89 +342,58 @@ def HTTPErrorsMessageException(e: HTTPError):
     if LOGGER_LEVEL == logging.DEBUG:
         logger.debug(f'Network Connection Error occurred: {msg}')
 
-sdxcookie_name = 'sdx-cookie'
+def get_aadata(search):
+    """Get a json data with the ``search`` results"""
 
-def check_Cookie_Status():
-    """Check the time and existence of the `cookie` session and return it"""
-    cookie = load_Cookie()
-    if cookie is None or exp_time_Cookie is True: 
-        cookie = get_Cookie()
-        stor_Cookie(cookie)
-        cookie = load_Cookie()
-        logger.debug('Cookie Loaded')
-
-    return cookie
-
-def exp_time_Cookie():
-    """Compare modified time and return `True` if is expired"""
-    # Get cookie modified time and convert it to datetime
-    temp_dir = tempfile.gettempdir()
-    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
-    csdx_ti_m = datetime.fromtimestamp(os.path.getmtime(cookiesdx_path))
-    delta_csdx = datetime.now() - csdx_ti_m
-    exp_c_time = timedelta(hours=24)
-
-    if delta_csdx > exp_c_time:
-            return True 
-    else:
-        return False
-
-def get_Cookie():
-    """ Retrieve sdx cookie"""
-    logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
+    fields={'buscar': search, 'filtros': '', 'tabla': 'resultados'}
+    
     try:
-        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
+        page = s.request(
+            'POST',
+            SUBDIVX_SEARCH_URL,
+            headers=headers,
+            fields=fields
+        ).data
+
+        if not page: 
+            logger.debug('Could not load page!')
+            attempts = 4
+            backoff_factor = 2
+            delay = backoff_delay(backoff_factor, attempts)
+            for _ in range(attempts):
+                logger.debug(f'Request Attempts #: {_}')
+                # console.log('Search Attempts: ', _)
+                time.sleep(delay)
+                page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
+                if not page : 
+                    continue
+                else:
+                    json_aaData = json.loads(page)['aaData']
+                    break
     except HTTPError as e:
         HTTPErrorsMessageException(e)
         exit(1)
 
-    return cookie_sdx
+    try:
+        console.clear()
+        if not page : 
+            console.print(":no_entry: [bold red]Couldn't load results page. Try later![/]", emoji=True, new_line_start=True)
+            logger.debug('Could not load results page')
+            exit(1)
+        else :
+            sEcho = json.loads(page)['sEcho']
+            if sEcho == "0":
+                raise NoResultsError(f'Not cookies found or expired, please repeat the search')
+            else:
+                json_aaData = json.loads(page)['aaData']
+                # For testing
+                # store_aadata(page)
 
-def stor_Cookie(sdx_cookie):
-    """ Store sdx cookies """
-    temp_dir = tempfile.gettempdir()
-    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
-
-    with open(cookiesdx_path, 'w') as file:
-        file.write(sdx_cookie)
-        file.close()
-    logger.debug('Store cookie')
+    except JSONDecodeError as msg:
+        logger.debug(f'Error JSONDecodeError: "{msg}"')
+        raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
     
-def load_Cookie():
-    """ Load stored sdx cookies return ``None`` if not exists"""
-    temp_dir = tempfile.gettempdir()
-    cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
-    if os.path.exists(cookiesdx_path):
-        with open(cookiesdx_path, 'r') as filecookie:
-            sdx_cookie = filecookie.read()
-    else:
-        return None
-
-    return sdx_cookie
-
-def store_aadata(aadata):
-    """ Store aadata """
-    temp_dir = tempfile.gettempdir()
-    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
-
-    with open(aadata_path, 'wb') as file:
-        file.write(aadata)
-        file.close()
-    logger.debug('Store aadata')
-
-def load_aadata():
-    temp_dir = tempfile.gettempdir()
-    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
-    if os.path.exists(aadata_path):
-        with open(aadata_path, 'r') as aadata_file:
-            sdx_aadata = aadata_file.read()
-    else:
-        return None
-
-    return sdx_aadata
-
-# Setting cookies
-headers['Cookie'] = check_Cookie_Status()
+    return json_aaData
 
 def make_layout() -> Layout:
     """Define the layout."""
@@ -490,13 +530,13 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                 if ch in ["D", "d"]:
                     description_selected = results_pages['pages'][page][selected]['descripcion']
                     subtitle_selected =  results_pages['pages'][page][selected]['titulo']
-                    description = str(html2text.html2text(description_selected)).strip()
+                    description = html2text.html2text(description_selected).strip()
                     description = highlight_text(description, metadata)
 
                     layout_description = make_screen_layout()
                     layout_description["description"].update(make_description_panel(description))
                     layout_description["subtitle"].update(Align.center(
-                                "Subtítulo: " + str(html2text.html2text(subtitle_selected)).strip(),
+                                "Subtítulo: " + html2text.html2text(subtitle_selected).strip(),
                                 vertical="middle",
                                 style="italic bold green"
                                 )
@@ -552,3 +592,110 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
         exit(0)
 
     return res
+
+### Extract Subtitles ###
+def extract_subtitles(compressed_sub_file, temp_file, topath):
+    """Extract ``compressed_sub_file`` from ``temp_file`` ``topath``"""
+
+    # In case of existence of various subtitles choose which to download
+    if len(compressed_sub_file.infolist()) > 1 :
+        clean_screen()
+        count = 0
+        choices = []
+        choices.append(str(count))
+        list_sub = []
+        table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
+                    header_style="bold yellow", show_lines=True, title_justify='center')
+        table.add_column("#", justify="center", vertical="middle", style="bold green")
+        table.add_column("Subtítulos", justify="center" , no_wrap=True)
+
+        for i in compressed_sub_file.infolist():
+            if i.is_dir() or os.path.basename(i.filename).startswith("._"):
+                continue
+            i.filename = os.path.basename(i.filename)
+            list_sub.append(i.filename)
+            table.add_row(str(count + 1), str(i.filename))
+            count += 1
+            choices.append(str(count))
+    
+        choices.append(str(count + 1))
+        console.print(table)
+        console.print("[bold green]>> [0] Descargar todos\r", new_line_start=True)
+        console.print("[bold red]>> [" + str(count + 1) + "] Cancelar descarga\r", new_line_start=True)
+
+        try:
+            res = IntPrompt.ask("[bold yellow]>> Elija un [" + "[bold green]#" + "][bold yellow]. Por defecto:", 
+                        show_choices=False, show_default=True, choices=choices, default=0)
+        except KeyboardInterrupt:
+            logger.debug('Interrupted by user')
+            console.print(":x: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
+            temp_file.close()
+            os.unlink(temp_file.name)
+            time.sleep(0.5)
+            clean_screen()
+            exit(1)
+    
+        if (res == count + 1):
+            logger.debug('Canceled Download Subtitle')
+            console.print(":x: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
+            temp_file.close()
+            os.unlink(temp_file.name)
+            time.sleep(2)
+            clean_screen()
+            exit(0)
+
+        logger.debug('Decompressing files')
+        if res == 0:
+            with compressed_sub_file as csf:
+                for sub in csf.infolist():
+                    if not sub.is_dir():
+                        sub.filename = os.path.basename(sub.filename)
+                    if any(sub.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub.filename:
+                        logger.debug(' '.join(['Decompressing subtitle:', sub.filename, 'to', os.path.dirname(topath)]))
+                        csf.extract(sub, os.path.dirname(topath))
+            compressed_sub_file.close()
+        else:
+            if any(list_sub[res - 1].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res - 1]:
+                with compressed_sub_file as csf:
+                    for sub in csf.infolist():
+                        if not sub.is_dir():
+                            sub.filename = os.path.basename(sub.filename)
+                            if list_sub[res - 1] == sub.filename :
+                                logger.debug(' '.join(['Decompressing subtitle:', list_sub[res - 1], 'to', os.path.dirname(topath)]))
+                                csf.extract(sub, os.path.dirname(topath))
+                                break
+            compressed_sub_file.close()
+        logger.debug(f"Done extract subtitles!")
+        console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+    else:
+        for name in compressed_sub_file.infolist():
+            # don't unzip stub __MACOSX folders
+            if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
+                logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
+                compressed_sub_file.extract(name, os.path.dirname(topath))
+        compressed_sub_file.close()
+        logger.debug(f"Done extract subtitle!")
+        console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+
+### Store aadata test ###
+
+def store_aadata(aadata):
+    """ Store aadata """
+    temp_dir = tempfile.gettempdir()
+    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
+
+    with open(aadata_path, 'wb') as file:
+        file.write(aadata)
+        file.close()
+    logger.debug('Store aadata')
+
+def load_aadata():
+    temp_dir = tempfile.gettempdir()
+    aadata_path = os.path.join(temp_dir, 'sdx-aadata')
+    if os.path.exists(aadata_path):
+        with open(aadata_path, 'r') as aadata_file:
+            sdx_aadata = aadata_file.read()
+    else:
+        return None
+
+    return sdx_aadata
