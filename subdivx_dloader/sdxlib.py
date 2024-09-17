@@ -1,17 +1,11 @@
 
 import os
-import json
 import time
-from rich.prompt import IntPrompt
-from .console import console
-from json import JSONDecodeError
 from tempfile import NamedTemporaryFile
 from zipfile import is_zipfile, ZipFile
 from rarfile import is_rarfile, RarFile
 
 from .sdxutils import *
-
-_sub_extensions = ['.srt', '.ssa']
 
 def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     
@@ -25,51 +19,13 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     """
 
     buscar = f"{title} {number}"
-    fields={'buscar': buscar, 'filtros': '', 'tabla': 'resultados'}
-    sEcho = "0"
+
     console.print("\r")
     logger.debug(f'Searching subtitles for: ' + str(title) + " " + str(number).upper())
+
     with console.status(f'Searching subtitles for: ' + str(title) + " " + str(number).upper()):
-        try:
-            page = s.request(
-                'POST',
-                SUBDIVX_SEARCH_URL,
-                headers=headers,
-                fields=fields
-            ).data
-
-        except HTTPError as e:
-            HTTPErrorsMessageException(e)
-            exit(1)
-
-        try:
-            sEcho = json.loads(page)['sEcho']
-            if sEcho == "0" :
-                attempts = 2
-                backoff_factor = 2
-                delay = backoff_delay(backoff_factor, attempts)
-                for _ in range(attempts):
-                    logger.debug(f'Request Attempts #: {_}')
-                    time.sleep(delay)
-                    page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
-                    sEcho = json.loads(page)['sEcho']
-                    if sEcho == 0 :
-                        continue
-                    else:
-                        json_aaData = json.loads(page)['aaData']
-                        break
-                if sEcho == "0":
-                    raise NoResultsError(f'Not cookies found or expired, please repeat the search')
-            else:
-                json_aaData = json.loads(page)['aaData']
+        json_aaData = get_aadata(buscar)
         
-        except JSONDecodeError as msg:
-            logger.debug(f'Error JSONDecodeError: "{msg}"')
-            raise NoResultsError(f'Error JSONDecodeError: "{msg}"')
-    
-    # For testing
-    # store_aadata(page)
-    
     # Checking Json Data Items
     aaData_Items = get_list_Dict(json_aaData)
     
@@ -90,6 +46,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
         raise NoResultsError(f'No suitable data were found for: "{buscar}"')
    
     ##### For testing ######### """
+    
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     
@@ -186,85 +143,7 @@ def get_subtitle(url, topath):
         os.unlink(temp_file.name)
         raise NoResultsError(f'No suitable subtitle download for : "{url}"')
     
-    # In case of existence of various subtitles choose which to download
-    if len(compressed_sub_file.infolist()) > 1 :
-        clean_screen()
-        count = 0
-        choices = []
-        choices.append(str(count))
-        list_sub = []
-        table = Table(box=box.ROUNDED, title=">> Subtítulos disponibles:", title_style="bold green",show_header=True, 
-                    header_style="bold yellow", show_lines=True, title_justify='center')
-        table.add_column("#", justify="center", vertical="middle", style="bold green")
-        table.add_column("Subtítulos", justify="center" , no_wrap=True)
-
-        for i in compressed_sub_file.infolist():
-            if i.is_dir() or os.path.basename(i.filename).startswith("._"):
-                continue
-            i.filename = os.path.basename(i.filename)
-            list_sub.append(i.filename)
-            table.add_row(str(count + 1), str(i.filename))
-            count += 1
-            choices.append(str(count))
-    
-        choices.append(str(count + 1))
-        console.print(table)
-        console.print("[bold green]>> [0] Descargar todos\r", new_line_start=True)
-        console.print("[bold red]>> [" + str(count + 1) + "] Cancelar descarga\r", new_line_start=True)
-
-        try:
-            res = IntPrompt.ask("[bold yellow]>> Elija un [" + "[bold green]#" + "][bold yellow]. Por defecto:", 
-                        show_choices=False, show_default=True, choices=choices, default=0)
-        except KeyboardInterrupt:
-            logger.debug('Interrupted by user')
-            console.print(":x: [bold red]Interrupto por el usuario...", emoji=True, new_line_start=True)
-            temp_file.close()
-            os.unlink(temp_file.name)
-            time.sleep(0.5)
-            clean_screen()
-            exit(1)
-    
-        if (res == count + 1):
-            logger.debug('Canceled Download Subtitle')
-            console.print(":x: [bold red] Cancelando descarga...", emoji=True, new_line_start=True)
-            temp_file.close()
-            os.unlink(temp_file.name)
-            time.sleep(2)
-            clean_screen()
-            exit(0)
-
-        logger.debug('Decompressing files')
-        if res == 0:
-            with compressed_sub_file as csf:
-                for sub in csf.infolist():
-                    if not sub.is_dir():
-                        sub.filename = os.path.basename(sub.filename)
-                    if any(sub.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in sub.filename:
-                        logger.debug(' '.join(['Decompressing subtitle:', sub.filename, 'to', os.path.dirname(topath)]))
-                        csf.extract(sub, os.path.dirname(topath))
-            compressed_sub_file.close()
-        else:
-            if any(list_sub[res - 1].endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in list_sub[res - 1]:
-                with compressed_sub_file as csf:
-                    for sub in csf.infolist():
-                        if not sub.is_dir():
-                            sub.filename = os.path.basename(sub.filename)
-                            if list_sub[res - 1] == sub.filename :
-                                logger.debug(' '.join(['Decompressing subtitle:', list_sub[res - 1], 'to', os.path.dirname(topath)]))
-                                csf.extract(sub, os.path.dirname(topath))
-                                break
-            compressed_sub_file.close()
-        logger.debug(f"Done extract subtitles!")
-        console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
-    else:
-        for name in compressed_sub_file.infolist():
-            # don't unzip stub __MACOSX folders
-            if any(name.filename.endswith(ext) for ext in _sub_extensions) and '__MACOSX' not in name.filename:
-                logger.debug(' '.join(['Decompressing subtitle:', name.filename, 'to', os.path.dirname(topath)]))
-                compressed_sub_file.extract(name, os.path.dirname(topath))
-        compressed_sub_file.close()
-        logger.debug(f"Done extract subtitle!")
-        console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+    extract_subtitles(compressed_sub_file, temp_file, topath)
 
     # Cleaning
     temp_file.close()
