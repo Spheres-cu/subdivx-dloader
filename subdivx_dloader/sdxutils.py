@@ -362,7 +362,6 @@ def get_aadata(search):
             delay = backoff_delay(backoff_factor, attempts)
             for _ in range(attempts):
                 logger.debug(f'Request Attempts #: {_}')
-                # console.log('Search Attempts: ', _)
                 time.sleep(delay)
                 page = s.request('POST', SUBDIVX_SEARCH_URL, headers=headers, fields=fields).data
                 if not page : 
