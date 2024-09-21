@@ -178,7 +178,8 @@ def match_text(title, number, inf_sub, text):
   search = f"{title} {number}"
   
   # Setting searchs Patterns
-  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I) if inf_sub['type'] == "movie" else re.compile(rf"^{re.escape(title.split()[0])}.*{number}.*$", re.I)
+  re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I) if inf_sub['type'] == "movie"\
+    else re.compile(rf"^{re.escape(title.split()[0])}.*{number}.*$", re.I)
   re_title_pattern = re.compile(rf"\b{re.escape(title)}\b", re.I)
 
   # Perform searches
