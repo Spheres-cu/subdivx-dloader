@@ -346,7 +346,7 @@ def HTTPErrorsMessageException(e: HTTPError):
 def get_aadata(search):
     """Get a json data with the ``search`` results"""
 
-    fields={'buscar': search, 'filtros': '', 'tabla': 'resultados'}
+    fields={'buscar21092024391': search, 'filtros': '', 'tabla': 'resultados'}
     
     try:
         page = s.request(
