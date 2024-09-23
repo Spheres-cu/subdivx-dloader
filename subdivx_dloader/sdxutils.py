@@ -155,8 +155,6 @@ _f_search = _vattrs.replace("v", "").replace(".", "")
 _f_rtk = _keywords[12][:-2]
 _f_tk = SUBDIVX_SEARCH_URL[:-8] + _f_rtk + '.php?' + _f_rtk + "=" + str(1**0.5)[:-2]
 
-logger.debug(f'Search version: {_vattrs} Search name: {_f_search} ')
-
 ### sdxlib utils ###
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
@@ -357,7 +355,7 @@ def HTTPErrorsMessageException(e: HTTPError):
 def get_aadata(search):
     """Get a json data with the ``search`` results"""
 
-    _r_ftoken = s.request('GET', SUBDIVX_SEARCH_URL[:-8] + 'ajax.php', preload_content=False).data
+    _r_ftoken = s.request('GET', _f_tk, preload_content=False).data
     _f_token = json.loads(_r_ftoken)['token']
 
     fields={'buscar'+ _f_search: search, 'filtros': '', 'tabla': 'resultados', 'token': _f_token}
