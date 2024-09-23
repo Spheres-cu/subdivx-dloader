@@ -148,8 +148,7 @@ headers['Cookie'] = check_Cookie_Status()
 
 _vpage = s.request('GET', SUBDIVX_DOWNLOAD_PAGE, preload_content=False).data
 _vdata = BeautifulSoup(_vpage, 'html5lib')
-_vattrs = _vdata('div', id="vs")[0].text
-_f_search = _vattrs.replace("v", "").replace(".", "")
+_f_search = _vdata('div', id="vs")[0].text.replace("v", "").replace(".", "")
 
 _f_rtk = _keywords[12][:-2]
 _f_tk = SUBDIVX_SEARCH_URL[:-8] + _f_rtk + '.php?' + _f_rtk + "=" + str(1**0.5)[:-2]
