@@ -58,8 +58,7 @@ Metadata = namedtuple('Metadata', 'keywords quality codec')
 # Configure connections
 
 headers={"user-agent" : 
-         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36 \
-            RuxitSynthetic/1.0 v6211797990607602692 t662062314270781625 ath259cea6f altpriv cvcv=2 smf=0"}
+         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML%2C like Gecko) Chrome/88.0.4324.182 Safari/537.36"}
 
 s = urllib3.PoolManager(num_pools=1, headers=headers, cert_reqs="CERT_REQUIRED", ca_certs=certifi.where(), retries=False, timeout=30)
 
@@ -159,6 +158,7 @@ _f_tk = SUBDIVX_SEARCH_URL[:-8] + _f_rtk + '.php?' + _f_rtk + "=" + str(1**0.5)[
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos""" 
+
     f = filename.lower()[:-4]
     def _match(options):
         try:
@@ -303,6 +303,7 @@ def clean_list_subs(list_dict_subs):
 
 def get_clean_results(list_results):
     """ Get a list of subs dict cleaned from `list_results` """
+    
     results_clean = []
     for item in list_results:
          results_clean.append(item[0])
@@ -327,6 +328,7 @@ def get_clean_results(list_results):
 
 def Network_Connection_Error(e: HTTPError) -> str:
     """ Return a Network Connection Error message """
+
     msg = e.__str__()
     error_class = e.__class__.__name__
     Network_error_msg= {
@@ -346,6 +348,7 @@ def HTTPErrorsMessageException(e: HTTPError):
         * Log HTTP Network connection Error message
         * Print HTTP Network connection error message
     """
+
     msg = Network_Connection_Error(e)
     console.print(":no_entry: [bold red]Some Network Connection Error occurred[/]: " + msg, new_line_start=True, emoji=True)
 
@@ -690,7 +693,6 @@ def extract_subtitles(compressed_sub_file, temp_file, topath):
         console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
 
 ### Store aadata test ###
-
 def store_aadata(aadata):
     """ Store aadata """
     temp_dir = tempfile.gettempdir()
@@ -702,6 +704,7 @@ def store_aadata(aadata):
     logger.debug('Store aadata')
 
 def load_aadata():
+    """Load aadata """
     temp_dir = tempfile.gettempdir()
     aadata_path = os.path.join(temp_dir, 'sdx-aadata')
     if os.path.exists(aadata_path):
