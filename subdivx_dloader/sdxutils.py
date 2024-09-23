@@ -11,6 +11,7 @@ import logging.handlers
 import html2text
 from json import JSONDecodeError
 from urllib3.exceptions import HTTPError
+from bs4 import BeautifulSoup
 from collections import namedtuple
 from datetime import datetime, timedelta
 from readchar import readkey, key
@@ -38,7 +39,7 @@ _qualities = ('1080i', '1080p', '2160p', '10bit', '1280x720',
                'web-dlwebdl', 'webrip', 'workprint')
 _keywords = (
 '2hd', 'adrenaline', 'amzn', 'asap', 'axxo', 'compulsion', 'crimson', 'ctrlhd', 
-'ctrlhd', 'ctu', 'dimension', 'ebp', 'ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
+'ctrlhd', 'ctu', 'dimension', 'ebp', 'gttv','ettv', 'eztv', 'fanta', 'fov', 'fqm', 'ftv', 
 'galaxyrg', 'galaxytv', 'hazmatt', 'immerse', 'internal', 'ion10', 'killers', 'loki', 
 'lol', 'mement', 'minx', 'notv', 'phoenix', 'rarbg', 'sfm', 'sva', 'sparks', 'turbo', 
 'torrentgalaxy', 'psa', 'nf', 'rrb', 'pcok', 'edith', 'successfulcrab', 'megusta', 'ethel',
@@ -115,7 +116,7 @@ def get_Cookie():
     """ Retrieve sdx cookie"""
     logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
     try:
-        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=5).headers.get('Set-Cookie').split(';')[0]
+        cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=10).headers.get('Set-Cookie').split(';')[0]
     except HTTPError as e:
         HTTPErrorsMessageException(e)
         exit(1)
@@ -145,6 +146,16 @@ def load_Cookie():
     return sdx_cookie
 
 headers['Cookie'] = check_Cookie_Status()
+
+_vpage = s.request('GET', SUBDIVX_DOWNLOAD_PAGE, preload_content=False).data
+_vdata = BeautifulSoup(_vpage, 'html5lib')
+_vattrs = _vdata('div', id="vs")[0].text
+_f_search = _vattrs.replace("v", "").replace(".", "")
+
+_f_rtk = _keywords[12][:-2]
+_f_tk = SUBDIVX_SEARCH_URL[:-8] + _f_rtk + '.php?' + _f_rtk + "=" + str(1**0.5)[:-2]
+
+logger.debug(f'Search version: {_vattrs} Search name: {_f_search} ')
 
 ### sdxlib utils ###
 def extract_meta_data(filename, kword):
@@ -346,7 +357,10 @@ def HTTPErrorsMessageException(e: HTTPError):
 def get_aadata(search):
     """Get a json data with the ``search`` results"""
 
-    fields={'buscar21092024391': search, 'filtros': '', 'tabla': 'resultados'}
+    _r_ftoken = s.request('GET', SUBDIVX_SEARCH_URL[:-8] + 'ajax.php', preload_content=False).data
+    _f_token = json.loads(_r_ftoken)['token']
+
+    fields={'buscar'+ _f_search: search, 'filtros': '', 'tabla': 'resultados', 'token': _f_token}
     
     try:
         page = s.request(
@@ -358,7 +372,7 @@ def get_aadata(search):
 
         if not page: 
             logger.debug('Could not load page!')
-            attempts = 4
+            attempts = 2
             backoff_factor = 2
             delay = backoff_delay(backoff_factor, attempts)
             for _ in range(attempts):
