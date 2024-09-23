@@ -15,7 +15,7 @@ setup(
     url='https://github.com/Spheres-cu/subdivx-dloader',
     packages=['subdivx_dloader',],
     license='GNU GENERAL PUBLIC LICENCE v3.0',
-    install_requires=['beautifulsoup4', 'tvnamer', 'guessit', 'rarfile', 'urllib3', 'certifi', 'rich', 'readchar', 'html2text'],
+    install_requires=['beautifulsoup4', 'html5lib',  'tvnamer', 'guessit', 'rarfile', 'urllib3', 'certifi', 'rich', 'readchar', 'html2text'],
     entry_points={
         'console_scripts': ['subdivx-dloader=subdivx_dloader.cli:main'],
     },
