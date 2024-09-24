@@ -146,13 +146,6 @@ def load_Cookie():
 
 headers['Cookie'] = check_Cookie_Status()
 
-_vpage = s.request('GET', SUBDIVX_DOWNLOAD_PAGE, preload_content=False).data
-_vdata = BeautifulSoup(_vpage, 'html5lib')
-_f_search = _vdata('div', id="vs")[0].text.replace("v", "").replace(".", "")
-
-_f_rtk = _keywords[12][:-2]
-_f_tk = SUBDIVX_SEARCH_URL[:-8] + _f_rtk + '.php?' + _f_rtk + "=" + str(1**0.5)[:-2]
-
 ### sdxlib utils ###
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
@@ -356,13 +349,16 @@ def HTTPErrorsMessageException(e: HTTPError):
 
 def get_aadata(search):
     """Get a json data with the ``search`` results"""
-
-    _r_ftoken = s.request('GET', _f_tk, preload_content=False).data
-    _f_token = json.loads(_r_ftoken)['token']
-
-    fields={'buscar'+ _f_search: search, 'filtros': '', 'tabla': 'resultados', 'token': _f_token}
     
     try:
+        _vpage = s.request('GET', SUBDIVX_DOWNLOAD_PAGE, preload_content=False).data
+        _vdata = BeautifulSoup(_vpage, 'html5lib')
+        _f_search = _vdata('div', id="vs")[0].text.replace("v", "").replace(".", "")
+        _f_rtk = _keywords[12][:-2]
+        _f_tk = SUBDIVX_SEARCH_URL[:-8] + _f_rtk + '.php?' + _f_rtk + "=" + str(1**0.5)[:-2]
+        _r_ftoken = s.request('GET', _f_tk, preload_content=False).data
+        _f_token = json.loads(_r_ftoken)['token']
+        fields={'buscar'+ _f_search: search, 'filtros': '', 'tabla': 'resultados', 'token': _f_token}
         page = s.request(
             'POST',
             SUBDIVX_SEARCH_URL,
@@ -384,11 +380,7 @@ def get_aadata(search):
                 else:
                     json_aaData = json.loads(page)['aaData']
                     break
-    except HTTPError as e:
-        HTTPErrorsMessageException(e)
-        exit(1)
 
-    try:
         console.clear()
         if not page : 
             console.print(":no_entry: [bold red]Couldn't load results page. Try later![/]", emoji=True, new_line_start=True)
@@ -402,6 +394,10 @@ def get_aadata(search):
                 json_aaData = json.loads(page)['aaData']
                 # For testing
                 # store_aadata(page)
+    
+    except HTTPError as e:
+        HTTPErrorsMessageException(e)
+        exit(1)
 
     except JSONDecodeError as msg:
         logger.debug(f'Error JSONDecodeError: "{msg}"')
