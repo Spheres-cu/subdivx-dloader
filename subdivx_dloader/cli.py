@@ -18,7 +18,7 @@ _extensions = [
 ]
 
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
+    """Get absolute path to resource, works for dev and for PyInstaller."""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
@@ -29,11 +29,11 @@ def resource_path(relative_path):
 
 @contextmanager
 def subtitle_renamer(filepath, inf_sub):
-    """dectect new subtitles files in a directory and rename with
-       filepath basename"""
+    """Dectect new subtitles files in a directory and rename with
+       filepath basename."""
 
     def extract_name(filepath):
-        """ Extract Filename """
+        """.Extract Filename."""
         filename, fileext = os.path.splitext(filepath)
         if fileext in ('.part', '.temp', '.tmp'):
             filename, fileext = os.path.splitext(filename)
