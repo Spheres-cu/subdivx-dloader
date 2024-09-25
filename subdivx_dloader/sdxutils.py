@@ -87,7 +87,7 @@ def setup_logger(level):
 sdxcookie_name = 'sdx-cookie'
 
 def check_Cookie_Status():
-    """Check the time and existence of the `cookie` session and return it"""
+    """Check the time and existence of the `cookie` session and return it."""
     cookie = load_Cookie()
     if cookie is None or exp_time_Cookie is True: 
         cookie = get_Cookie()
@@ -98,7 +98,7 @@ def check_Cookie_Status():
     return cookie
 
 def exp_time_Cookie():
-    """Compare modified time and return `True` if is expired"""
+    """Compare modified time and return `True` if is expired."""
     # Get cookie modified time and convert it to datetime
     temp_dir = tempfile.gettempdir()
     cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
@@ -112,7 +112,7 @@ def exp_time_Cookie():
         return False
 
 def get_Cookie():
-    """ Retrieve sdx cookie"""
+    """ Retrieve sdx cookie."""
     logger.debug('Get cookie from %s', SUBDIVX_SEARCH_URL)
     try:
         cookie_sdx = s.request('GET', SUBDIVX_SEARCH_URL, timeout=10).headers.get('Set-Cookie').split(';')[0]
@@ -123,7 +123,7 @@ def get_Cookie():
     return cookie_sdx
 
 def stor_Cookie(sdx_cookie):
-    """ Store sdx cookies """
+    """ Store sdx cookies."""
     temp_dir = tempfile.gettempdir()
     cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
 
@@ -133,7 +133,7 @@ def stor_Cookie(sdx_cookie):
     logger.debug('Store cookie')
     
 def load_Cookie():
-    """ Load stored sdx cookies return ``None`` if not exists"""
+    """ Load stored sdx cookies return ``None`` if not exists."""
     temp_dir = tempfile.gettempdir()
     cookiesdx_path = os.path.join(temp_dir, sdxcookie_name)
     if os.path.exists(cookiesdx_path):
@@ -149,7 +149,7 @@ headers['Cookie'] = check_Cookie_Status()
 ### sdxlib utils ###
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
-    the lists of keywords includen quality and codec for videos""" 
+    the lists of keywords includen quality and codec for videos.""" 
 
     f = filename.lower()[:-4]
     def _match(options):
@@ -167,9 +167,9 @@ def extract_meta_data(filename, kword):
     return Metadata(keywords, quality, codec)
 
 def match_text(title, number, inf_sub, text):
-  """Search ``pattern`` for the whole phrase in ``text`` for a exactly match"""
+  """Search ``pattern`` for the whole phrase in ``text`` for a exactly match."""
 
-  #Setting Patterns
+  # Setting Patterns
   special_char = ["`", "'", "´", ":", ".", "?"]
   for i in special_char:
       title = title.replace(i, '')
@@ -245,7 +245,7 @@ def highlight_text(text,  metadata):
     return highlighted
 
 def backoff_delay(backoff_factor = 2, attempts = 2):
-    """ backoff algorithm: backoff_factor * (2 ** attempts) """
+    """ backoff algorithm: backoff_factor * (2 ** attempts)."""
     delay = backoff_factor * (2 ** attempts)
     return delay
 
@@ -253,7 +253,7 @@ def convert_datetime(string_datetime:str):
     """
        Convert ``string_datetime`` in a datetime obj then format it to "%d/%m/%Y %H:%M"
 
-       Return ``--- --`` if not invalid datetime string
+       Return ``--- --`` if not invalid datetime string.
     """
 
     try:
@@ -268,7 +268,7 @@ def convert_datetime(string_datetime:str):
     return date_time_str
 
 def get_list_Dict(Data):
-    """ Checking if ``Data`` is a list of dictionarys """
+    """ Checking if ``Data`` is a list of dictionarys."""
 
     if isinstance(Data, list) and all(isinstance(item, dict)  
         for item in Data):  
@@ -281,7 +281,7 @@ def get_list_Dict(Data):
 def clean_list_subs(list_dict_subs):
     """ Clean not used Items from list of subtitles dictionarys ``list_dict_subs``
         
-        Convert to datetime Items ``fecha_subida``
+        Convert to datetime Items ``fecha_subida``.
     """
     erase_list_Item_Subs = ['cds', 'idmoderador', 'eliminado', 'id_subido_por', 'framerate', 'comentarios', 'formato', 'promedio', 'pais']
 
@@ -319,7 +319,7 @@ def get_clean_results(list_results):
     return list_Subs_dict_results
 
 def Network_Connection_Error(e: HTTPError) -> str:
-    """ Return a Network Connection Error message """
+    """ Return a Network Connection Error message."""
 
     msg = e.__str__()
     error_class = e.__class__.__name__
@@ -338,7 +338,7 @@ def Network_Connection_Error(e: HTTPError) -> str:
 def HTTPErrorsMessageException(e: HTTPError):
     """ Manage HTTP Network connection Errors Exceptions message:
         * Log HTTP Network connection Error message
-        * Print HTTP Network connection error message
+        * Print HTTP Network connection error message.
     """
 
     msg = Network_Connection_Error(e)
@@ -348,7 +348,7 @@ def HTTPErrorsMessageException(e: HTTPError):
         logger.debug(f'Network Connection Error occurred: {msg}')
 
 def get_aadata(search):
-    """Get a json data with the ``search`` results"""
+    """Get a json data with the ``search`` results."""
     
     try:
         _vpage = s.request('GET', SUBDIVX_DOWNLOAD_PAGE, preload_content=False).data
@@ -378,7 +378,7 @@ def get_aadata(search):
                 if not page : 
                     continue
                 else:
-                    json_aaData = json.loads(page)['aaData']
+                    json_aaData = json.loads(page)
                     break
 
         console.clear()
@@ -391,7 +391,7 @@ def get_aadata(search):
             if sEcho == "0":
                 raise NoResultsError(f'Not cookies found or expired, please repeat the search')
             else:
-                json_aaData = json.loads(page)['aaData']
+                json_aaData = json.loads(page)
                 # For testing
                 # store_aadata(page)
     
@@ -429,7 +429,7 @@ def make_screen_layout() -> Layout:
     return layout
 
 def make_description_panel(description) -> Panel:
-    """Define a description Panel"""
+    """Define a description Panel."""
     descriptions = Table.grid(padding=1)
     descriptions.add_column()
     descriptions.add_row(description)
@@ -448,7 +448,7 @@ def make_description_panel(description) -> Panel:
     return descriptions_panel
 
 def generate_results(title, results, page, selected) -> Layout:
-    """Generate Selectable results Table"""
+    """Generate Selectable results Table."""
 
     SELECTED = Style(color="green", bgcolor="gray35", bold=True)
     layout_results = make_layout() 
@@ -493,7 +493,7 @@ def generate_results(title, results, page, selected) -> Layout:
     return layout_results
 
 def MetadataHighlighter(text, metadata: Metadata) -> Text :
-    """Apply style Highlight to all text  matches metadata and return a `Text` object"""
+    """Apply style Highlight to all text  matches metadata and return a `Text` object."""
     
     highlighted = Text(text, justify="center")
     highlighted.highlight_words(metadata.keywords, style = "white on green4", case_sensitive=False)
@@ -508,7 +508,7 @@ def paginate(items, per_page):
      * Total items
      * Number of pages
      * Per page amount
-     * List of pages
+     * List of pages.
     """
     pages = [items[i:i+per_page] for i in range(0, len(items), per_page)]
     return {
@@ -519,7 +519,7 @@ def paginate(items, per_page):
     }
 
 def get_selected_subtitle_id(table_title, results_pages, metadata):
-    """Show subtitles search results for obtain download id"""
+    """Show subtitles search results for obtain download id."""
 
     try:
         selected = 0
@@ -605,7 +605,7 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
 
 ### Extract Subtitles ###
 def extract_subtitles(compressed_sub_file, temp_file, topath):
-    """Extract ``compressed_sub_file`` from ``temp_file`` ``topath``"""
+    """Extract ``compressed_sub_file`` from ``temp_file`` ``topath``."""
 
     # In case of existence of various subtitles choose which to download
     if len(compressed_sub_file.infolist()) > 1 :
@@ -689,7 +689,7 @@ def extract_subtitles(compressed_sub_file, temp_file, topath):
 
 ### Store aadata test ###
 def store_aadata(aadata):
-    """ Store aadata """
+    """Store aadata."""
     temp_dir = tempfile.gettempdir()
     aadata_path = os.path.join(temp_dir, 'sdx-aadata')
 
@@ -699,7 +699,7 @@ def store_aadata(aadata):
     logger.debug('Store aadata')
 
 def load_aadata():
-    """Load aadata """
+    """Load aadata."""
     temp_dir = tempfile.gettempdir()
     aadata_path = os.path.join(temp_dir, 'sdx-aadata')
     if os.path.exists(aadata_path):
