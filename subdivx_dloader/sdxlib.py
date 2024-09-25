@@ -15,7 +15,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
       The results are ordered based on a weighing of a ``metadata`` list.
 
       If ``no_choose`` ``(-nc)``  is true then a list of subtitles is show for chose 
-        else the first subtitle is choosen
+        else the first subtitle is choosen.
     """
 
     buscar = f"{title} {number}"
@@ -26,8 +26,11 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     with console.status(f'Searching subtitles for: ' + str(title) + " " + str(number).upper()):
         json_aaData = get_aadata(buscar)
         
+    if json_aaData["iTotalRecords"] == 0 :
+        raise NoResultsError(f'Not subtitles records found for: {buscar}')
+
     # Checking Json Data Items
-    aaData_Items = get_list_Dict(json_aaData)
+    aaData_Items = get_list_Dict(json_aaData['aaData'])
     
     if aaData_Items is not None:
         # Cleaning Items
@@ -109,7 +112,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
             exit(1)
 
 def get_subtitle(url, topath):
-    """Download subtitles from ``url`` to a destination ``path``"""
+    """Download subtitles from ``url`` to a destination ``path``."""
     
     clean_screen()
     temp_file = NamedTemporaryFile(delete=False)
