@@ -9,6 +9,7 @@ import urllib3
 import tempfile
 import logging.handlers
 import html2text
+from .html2bbcode import HTML2BBCode
 from json import JSONDecodeError
 from urllib3.exceptions import HTTPError
 from bs4 import BeautifulSoup
@@ -540,7 +541,9 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                 if ch in ["D", "d"]:
                     description_selected = results_pages['pages'][page][selected]['descripcion']
                     subtitle_selected =  results_pages['pages'][page][selected]['titulo']
-                    description = html2text.html2text(description_selected).strip()
+                    parser = HTML2BBCode()
+                    description = str(parser.feed(description_selected))
+                    # description = html2text.html2text(description_selected).strip()
                     description = highlight_text(description, metadata)
 
                     layout_description = make_screen_layout()
