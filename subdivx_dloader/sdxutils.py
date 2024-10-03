@@ -390,7 +390,8 @@ def get_aadata(search):
         else :
             sEcho = json.loads(page)['sEcho']
             if sEcho == "0":
-                raise NoResultsError(f'Not cookies found or expired, please repeat the search')
+                site_msg = str(json.loads(page)['mensaje'])
+                raise NoResultsError(f'Site message: {site_msg}')
             else:
                 json_aaData = json.loads(page)
                 # For testing
