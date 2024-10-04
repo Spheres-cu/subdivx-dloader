@@ -531,7 +531,7 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
             generate_results (table_title, results_pages, page, selected),auto_refresh=False, screen=True, transient=True
         ) as live:
             while True:
-                console.show_cursor(False)
+                live.console.show_cursor(False)
                 ch = readkey()
                 if ch == key.UP or ch == key.PAGE_UP:
                     selected = max(0, selected - 1)
@@ -558,6 +558,7 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
 
                     with console.screen(hide_cursor=True) as screen: 
                         while True:
+                            screen.console.show_cursor(False)
                             screen.update(layout_description)
 
                             ch_exit = readkey()
