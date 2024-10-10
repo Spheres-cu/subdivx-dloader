@@ -168,7 +168,7 @@ def extract_meta_data(filename, kword):
     return Metadata(keywords, quality, codec)
 
 def match_text(title, number, inf_sub, text):
-  """Search ``pattern`` for the whole phrase in ``text`` for a exactly match."""
+  """Filter Search results with the best match possible"""
 
   # Setting Patterns
   special_char = ["`", "'", "´", ":", ".", "?"]
@@ -178,15 +178,23 @@ def match_text(title, number, inf_sub, text):
   text = str(html2text.html2text(text)).strip()
   aka = "aka"
   search = f"{title} {number}"
+  match_type = None
   
   # Setting searchs Patterns
+  re_full_match = re.compile(rf"^{re.escape(search)}$", re.I)
   re_full_pattern = re.compile(rf"^{re.escape(title)}.*{number}.*$", re.I) if inf_sub['type'] == "movie"\
     else re.compile(rf"^{re.escape(title.split()[0])}.*{number}.*$", re.I)
   re_title_pattern = re.compile(rf"\b{re.escape(title)}\b", re.I)
 
   # Perform searches
-  r = True if re_full_pattern.search(text.strip()) else False
-  logger.debug(f'FullMatch text: {text} Found: {r}')
+  r = True if re_full_match.search(text.strip()) else False
+  match_type = 'full' if r else None
+  logger.debug(f'FullMatch text: {text} Found: {match_type} {r}')
+
+  if not r:
+    r = True if re_full_pattern.search(text.strip()) else False
+    match_type = 'full' if r else None 
+    logger.debug(f'FullPattern text: {text} Found:{match_type} {r}')
 
   if not r :
     rtitle = True if re_title_pattern.search(text.strip()) else False
@@ -204,22 +212,72 @@ def match_text(title, number, inf_sub, text):
         raka = True if re.search(rf"\b{aka}\b", text, re.I) else False
         logger.debug(f'Search Match: aka Found: {raka}')
         r = True if rtitle and rnumber and raka else False
+        match_type = 'partial' if r else None
     else:
         r = True if rtitle and rnumber else False
+        match_type = 'partial' if r else None
 
-    logger.debug(f'Partial Match text: {text}: {r}')
+    logger.debug(f'Partial Match text: {text}:{match_type} {r}')
 
   if not r:
     if all(re.search(rf"\b{word}\b", text, re.I) for word in search.split()) :
-        r = True  if rnumber and raka else False
-    logger.debug(f'All Words Match Search: {search.split()} in {text}: {r}')
+        r = True if rnumber and raka else False
+        match_type = 'partial' if r else None
+    logger.debug(f'All Words Match Search: {search.split()} in {text}:{match_type} {r}')
 
   if not r:
     if all(re.search(rf"\b{word}\b", text, re.I) for word in title.split()) :
-        r = True  if rnumber else False
-    logger.debug(f'All Words Match title and number: {title.split()} in {text}: {r}')
+        r = True if rnumber else False
+        match_type = 'partial' if r else None
+    logger.debug(f'All Words Match title and number: {title.split()} in {text}: {match_type} {r}')
+
+  if not r:
+    if any(re.search(rf"\b{word}\b", text, re.I) for word in title.split()) :
+        r = True if rnumber else False
+        match_type = 'any' if r else None
+    logger.debug(f'Any Words Match title and number: {title.split()} in {text}: {match_type} {r}')
        
-  return r 
+  return match_type 
+
+def get_filtered_results (title, number, inf_sub, list_Subs_Dicts):
+    """Filter subtitles search for the best match results"""
+    
+    filtered_results = []
+    lst_full = []
+    lst_partial = []
+    lst_any = []
+
+    for subs_dict in list_Subs_Dicts:
+        mtype = match_text(title, number, inf_sub, subs_dict['titulo'])
+        if mtype == 'full':
+            lst_full.append(subs_dict)
+        elif mtype == 'partial':
+            lst_partial.append(subs_dict)
+        else:
+            if mtype == 'any':
+                lst_any.append(subs_dict)
+    
+    if inf_sub['type'] == "episode":
+        if inf_sub['season']:
+            filtered_results = lst_full if len(lst_full) !=0 else lst_partial
+        else:
+            if len(lst_full) != 0:
+                filtered_results = lst_full
+            elif len(lst_partial) != 0:
+                filtered_results = lst_partial
+            else:
+                filtered_results = lst_any
+    else:
+        if len(lst_full) != 0:
+            filtered_results = lst_full
+        elif len(lst_partial) !=0:
+            filtered_results = lst_partial
+        else:
+            filtered_results = lst_any
+    
+    filtered_results = sorted(filtered_results, key=lambda item: item['id'], reverse=True)
+
+    return filtered_results
 
 def clean_screen():
     os.system('clear' if os.name != 'nt' else 'cls')
@@ -284,40 +342,16 @@ def clean_list_subs(list_dict_subs):
         
         Convert to datetime Items ``fecha_subida``.
     """
-    erase_list_Item_Subs = ['cds', 'idmoderador', 'eliminado', 'id_subido_por', 'framerate', 'comentarios', 'formato', 'promedio', 'pais']
-
+    list_Item_Subs = ['id', 'titulo', 'descripcion', 'descargas', 'comentarios', 'fecha_subida', 'nick']
+    
     for dictionary in list_dict_subs:
-        for i in erase_list_Item_Subs:
-            del dictionary[i]
+        for i in list(dictionary.keys()):
+            if i not in list_Item_Subs:
+                del dictionary[i]
     
         dictionary['fecha_subida'] = convert_datetime(str(dictionary['fecha_subida']))
 
     return list_dict_subs
-
-def get_clean_results(list_results):
-    """ Get a list of subs dict cleaned from `list_results` """
-    
-    results_clean = []
-    for item in list_results:
-         results_clean.append(item[0])
-    list_Subs_results = list(map(list, results_clean))
-    
-    Subs_dict_results=[]
-    for _sub in list_Subs_results:
-
-        Sub_dict = {
-        "id":_sub[0],
-        "descripcion":_sub[1][0],
-        "titulo":_sub[1][1],
-        "descargas":_sub[1][2],
-        "nick":_sub[1][3],
-        "fecha_subida":_sub[1][4]
-        }
-        Subs_dict_results.append(Sub_dict)
-    
-    list_Subs_dict_results = get_list_Dict(Subs_dict_results)
-
-    return list_Subs_dict_results
 
 def Network_Connection_Error(e: HTTPError) -> str:
     """ Return a Network Connection Error message."""
@@ -493,16 +527,6 @@ def generate_results(title, results, page, selected) -> Layout:
     layout_results["table"].update(table)
     
     return layout_results
-
-def MetadataHighlighter(text, metadata: Metadata) -> Text :
-    """Apply style Highlight to all text  matches metadata and return a `Text` object."""
-    
-    highlighted = Text(text, justify="center")
-    highlighted.highlight_words(metadata.keywords, style = "white on green4", case_sensitive=False)
-    highlighted.highlight_words(metadata.quality, style = "white on green4", case_sensitive=False)
-    highlighted.highlight_words(metadata.codec, style = "white on green4", case_sensitive=False)
-    
-    return highlighted
 
 def paginate(items, per_page):
     """ Paginate `items` in perpage lists 
