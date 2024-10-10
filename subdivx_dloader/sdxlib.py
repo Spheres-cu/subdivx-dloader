@@ -53,40 +53,40 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     # only include results for this specific serie / episode
     # ie. search terms are in the title of the result item
     
-    filtered_list_Subs_Dicts = {
-        subs_dict['id']: [subs_dict['descripcion'], subs_dict['titulo'], subs_dict['descargas'], subs_dict['nick'], subs_dict['fecha_subida']] for subs_dict in list_Subs_Dicts
-        if match_text(title, number, inf_sub, subs_dict['titulo'])
-    }
+    filtered_list_Subs_Dicts = get_filtered_results(title, number, inf_sub, list_Subs_Dicts)
 
     if not filtered_list_Subs_Dicts:
         raise NoResultsError(f'No suitable subtitles were found for: "{buscar}"')
 
     # finding the best result looking for metadata keywords
     # in the description and max downloads
-    scores = []
+
     downloads = []
-    for x in filtered_list_Subs_Dicts.values(): 
-         downloads.append(int(x[2]))
+    for x in filtered_list_Subs_Dicts: 
+         downloads.append(int(x['descargas']))
     max_dl = max(downloads)
-
-    for subs_dict in filtered_list_Subs_Dicts.values():
-
+    results = []
+    
+    for subs_dict in filtered_list_Subs_Dicts:
+        description = subs_dict['descripcion']
         score = 0
+        
         for keyword in metadata.keywords:
-            if keyword.lower() in subs_dict[0]:
+            if keyword.lower() in description:
                 score += .75
         for quality in metadata.quality:
-            if quality.lower() in subs_dict[0]:
+            if quality.lower() in description:
                 score += .25
         for codec in metadata.codec:
-            if codec.lower() in subs_dict[0]:
+            if codec.lower() in description:
                 score += .25
-        if  max_dl == int(subs_dict[2]):
+        if  max_dl == int(subs_dict['descargas']):
                 score += .5
-        scores.append(score)
+        
+        subs_dict['score'] = score
+        results.append(subs_dict)
 
-    sorted_results = sorted(zip(filtered_list_Subs_Dicts.items(), scores), key=lambda item: item[1], reverse=True)
-    results = get_clean_results(sorted_results)
+    results = sorted(results, key=lambda item: (item['score'], item['descargas']), reverse=True)
 
     # Print subtitles search infos
     # Construct Table for console output
