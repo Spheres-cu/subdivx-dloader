@@ -24,7 +24,6 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.table import Table
 from rich.align import Align
-from rich.text import Text
 from rich.live import Live
 from rich.prompt import IntPrompt
 from rich.traceback import install
