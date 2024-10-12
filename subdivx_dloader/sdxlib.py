@@ -95,7 +95,7 @@ def get_subtitle_url(title, number, metadata, no_choose, inf_sub):
     results_pages = paginate(results, 10)
 
     if (no_choose==False):
-        res = get_selected_subtitle_id(table_title, results_pages, metadata)
+        res = get_selected_subtitle_id(table_title, results, metadata)
         url = SUBDIVX_DOWNLOAD_PAGE + str(res)
     else:
         # get first subtitle
