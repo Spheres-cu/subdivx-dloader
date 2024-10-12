@@ -147,7 +147,7 @@ def load_Cookie():
 
 headers['Cookie'] = check_Cookie_Status()
 
-### sdxlib utils ###
+#### sdxlib utils ####
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
     the lists of keywords includen quality and codec for videos.""" 
@@ -167,6 +167,7 @@ def extract_meta_data(filename, kword):
         keywords = keywords + kword.split(' ')
     return Metadata(keywords, quality, codec)
 
+### Filters searchs functions ###
 def match_text(title, number, inf_sub, text):
   """Filter Search results with the best match possible"""
 
@@ -270,6 +271,8 @@ def get_filtered_results (title, number, inf_sub, list_Subs_Dicts):
     filtered_results = sorted(filtered_results, key=lambda item: item['id'], reverse=True)
 
     return filtered_results
+
+### Filters searchs functions ###
 
 def clean_screen():
     os.system('clear' if os.name != 'nt' else 'cls')
@@ -475,6 +478,116 @@ def make_description_panel(description) -> Panel:
 
     return descriptions_panel
 
+## Get Comments functions ##
+def get_comments_data(subid:int):
+    """Get comments Json data"""
+
+    fields={'getComentarios': subid}
+    try:
+        page = s.request('POST', SUBDIVX_SEARCH_URL, fields=fields, headers=headers).data
+        json_comments = json.loads(page)
+
+    except HTTPError as e:
+        msg = Network_Connection_Error(e)
+        logger.debug(f'Could not load comments ID:{subid}: Network Connection Error:"{msg}"')
+        return None
+
+    except JSONDecodeError as msg:
+        logger.debug(f'Could not load comments ID:{subid}: Error JSONDecodeError:"{msg}"')
+        return None
+
+    return json_comments
+
+def parse_list_comments(list_dict_comments):
+    """ Parse comments :
+       * Remove not used Items
+       * Convert to datetime Items ``fecha_creacion``.
+       * Convert ``nick`` to text
+    """
+    list_Item_Comments = ['comentario', 'nick',  'fecha_creacion']
+    parser = html2text.HTML2Text()
+    parser.ignore_images = True
+    parser.ignore_links = True
+
+    for dictionary in list_dict_comments:
+        for i in list(dictionary.keys()):
+            if i not in list_Item_Comments:
+                del dictionary[i]
+    
+        dictionary['fecha_creacion'] = convert_datetime(str(dictionary['fecha_creacion']))
+        dictionary['nick'] = parser.handle(dictionary['nick']).strip()
+
+    return list_dict_comments
+
+def make_comments_panel(title, results, page) -> Panel:
+    """Define a comments Panel."""
+
+    BG_STYLE = Style(color="white", bgcolor="gray0", bold=False)
+
+    comment_table = Table(box=box.SIMPLE_HEAD, title="\n" + title, caption="MOVERSE: [[bold green] \u2190 \u2192 [/]]\n\n"\
+                    "[italic bright_yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
+                    "[[bold green]A[/]] PARA IR ATRÁS [/]",
+                    show_header=True, header_style="bold yellow", title_style="bold green",
+                    caption_style="bold bright_yellow", leading=1, show_lines=True)
+    
+    comment_table.add_column("#", justify="right", vertical="middle", style="bold green")
+    comment_table.add_column("Comentario", justify="left", vertical="middle", style="white")
+    comment_table.add_column("Usuario", justify="center", vertical="middle")
+    comment_table.add_column("Fecha", justify="center", vertical="middle")
+
+    count = page * results['per_page']
+    rows = []
+ 
+    for item in results['pages'][page]:
+        try:
+            comentario = str(html2text.html2text(item['comentario'])).strip()
+            usuario = str(item['nick'])
+            fecha = str(item['fecha_creacion'])
+
+            items = [str(count + 1), comentario, usuario, fecha]
+            rows.append(items)
+        except IndexError:
+            pass
+        count = count +1
+    
+    for row in rows:
+        row[0] =  "[bold green]" + row[0] + "[/]"
+        comment_table.add_row(*row, style = BG_STYLE )
+
+    comment_panel = Panel(
+        Align.center(
+            Group(Align.left(comment_table,vertical='top')), vertical = "top"
+        ),
+        box = box.ROUNDED,
+        title = "[bold yellow]Comentarios[/]",
+        title_align = "center",
+        subtitle = "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]"\
+            + str(results['pages_no']) + "[/] " \
+            "de [bold green]" + str(results['total']) + "[/] comentario(s)[/]",
+        subtitle_align = "center",
+        padding = 0 
+    )
+
+    return comment_panel
+
+def not_comments(text) -> Panel:
+    """Show Not Comments Panel"""
+
+    not_comment_panel = Panel(
+        Align.center(
+            Group(Align.center(text,vertical='middle')), vertical = "middle"
+        ),
+        box = box.ROUNDED,
+        title = "[bold yellow]Comentarios[/]",
+        subtitle ="[italic bright_yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
+                  "[[bold green]A[/]] PARA IR ATRÁS [/]",
+        padding = 5 
+    )
+
+    return not_comment_panel
+
+### Show results and get subtitles ###
+
 def generate_results(title, results, page, selected) -> Layout:
     """Generate Selectable results Table."""
 
@@ -484,7 +597,7 @@ def generate_results(title, results, page, selected) -> Layout:
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
                 caption="MOVERSE: [[bold green] \u2193 \u2191 \u2192 \u2190 [/]] | " \
                 "DESCARGAR: [[bold green]Enter[/]]\n\n" \
-                "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]S[/]] SALIR\n\n" \
+                "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]C[/]] COMENTARIOS |[[bold green]S[/]] SALIR\n\n" \
                 "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
                 "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                 title_style="bold green",
@@ -536,9 +649,9 @@ def paginate(items, per_page):
         'pages': pages
     }
 
-def get_selected_subtitle_id(table_title, results_pages, metadata):
+def get_selected_subtitle_id(table_title, results, metadata):
     """Show subtitles search results for obtain download id."""
-
+    results_pages = paginate(results, 10)
     try:
         selected = 0
         page = 0
@@ -560,7 +673,6 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                     subtitle_selected =  results_pages['pages'][page][selected]['titulo']
                     parser = HTML2BBCode()
                     description = str(parser.feed(description_selected))
-                    # description = html2text.html2text(description_selected).strip()
                     description = highlight_text(description, metadata)
 
                     layout_description = make_screen_layout()
@@ -569,8 +681,7 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                                 "Subtítulo: " + html2text.html2text(subtitle_selected).strip(),
                                 vertical="middle",
                                 style="italic bold green"
-                                )
-                    )
+                                ))
 
                     with console.screen(hide_cursor=True) as screen: 
                         while True:
@@ -585,6 +696,58 @@ def get_selected_subtitle_id(table_title, results_pages, metadata):
                                 res = results_pages['pages'][page][selected]['id']
                                 break
                                 
+                    if res != 0: break
+                
+                if ch in ["C", "c"]:
+                    cpage = 0
+                    show_comments = True
+                    subtitle_selected =  results_pages['pages'][page][selected]['titulo']
+                    layout_comments = make_layout()
+                    title ="Subtítulo: " + html2text.html2text(subtitle_selected).strip()
+
+                    if results_pages['pages'][page][selected]['comentarios'] != 0:
+                        subid = int(results_pages['pages'][page][selected]['id'])
+                        aaData = get_comments_data(subid)
+                        if aaData is not None:
+                            comments = get_list_Dict(aaData['aaData'])
+                            comments = parse_list_comments(comments) if comments is not None else None
+                            comments = paginate(comments, 8) if comments is not None else None
+                        else:
+                            show_comments = False
+                            comment_msg = ":neutral_face: [bold red]¡No se pudieron cargar los comentarios![/]"
+                        
+                        if comments is None:
+                            show_comments = False
+                            comment_msg = ":neutral_face: [bold red]¡No se pudieron cargar los comentarios![/]"
+                    else:
+                        show_comments = False
+                        comment_msg = ":neutral_face: [bold red]¡No hay comentarios para este subtítulo![/]"
+
+                    with console.screen(hide_cursor=True) as screen_comments:
+                        while True:
+                            if show_comments :
+                                layout_comments['table'].update(make_comments_panel(title, comments, cpage))
+                            else :
+                                layout_comments['table'].update(not_comments(comment_msg))
+                            
+                            screen_comments.console.show_cursor(False)
+                            screen_comments.update(layout_comments)
+
+                            ch_comment = readkey()
+                            
+                            if ch_comment in ["A", "a"]:
+                                break
+                            
+                            if ch_comment == key.RIGHT :
+                                cpage = min(comments["pages_no"] - 1, cpage + 1)
+
+                            if ch_comment == key.LEFT :
+                                cpage = max(0, cpage - 1)
+
+                            if ch_comment in ["D", "d"]:
+                                res = subid
+                                break
+
                     if res != 0: break
 
                 if ch == key.RIGHT :
