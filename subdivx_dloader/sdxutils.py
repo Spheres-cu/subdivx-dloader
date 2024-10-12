@@ -517,21 +517,24 @@ def parse_list_comments(list_dict_comments):
         dictionary['fecha_creacion'] = convert_datetime(str(dictionary['fecha_creacion']))
         dictionary['nick'] = parser.handle(dictionary['nick']).strip()
 
-    return list_dict_comments
+    return get_list_Dict(list_dict_comments)
 
-def make_comments_panel(title, results, page) -> Panel:
-    """Define a comments Panel."""
+def make_comments_table(title, results, page) -> Table:
+    """Define a comments Table."""
 
     BG_STYLE = Style(color="white", bgcolor="gray0", bold=False)
 
-    comment_table = Table(box=box.SIMPLE_HEAD, title="\n" + title, caption="MOVERSE: [[bold green] \u2190 \u2192 [/]]\n\n"\
-                    "[italic bright_yellow] Oprima:[[bold green]D[/]] PARA DESCARGAR " \
-                    "[[bold green]A[/]] PARA IR ATRÁS [/]",
+    comment_table = Table(box=box.SIMPLE_HEAD, title="\n" + title, caption="[italic bright_yellow] MOVERSE: [[bold green] \u2190 \u2192 [/]] "\
+                    "| [[bold green]A[/]] ATRÁS [[bold green]D[/]] DESCARGAR[/]\n\n"\
+                    "[italic] Página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]"\
+                    + str(results['pages_no']) + "[/] " \
+                    "de [bold green]" + str(results['total']) + "[/] comentario(s)[/]"   
+                        ,
                     show_header=True, header_style="bold yellow", title_style="bold green",
                     caption_style="bold bright_yellow", leading=1, show_lines=True)
     
     comment_table.add_column("#", justify="right", vertical="middle", style="bold green")
-    comment_table.add_column("Comentario", justify="left", vertical="middle", style="white")
+    comment_table.add_column("Comentarios", justify="left", vertical="middle", style="white")
     comment_table.add_column("Usuario", justify="center", vertical="middle")
     comment_table.add_column("Fecha", justify="center", vertical="middle")
 
@@ -554,21 +557,7 @@ def make_comments_panel(title, results, page) -> Panel:
         row[0] =  "[bold green]" + row[0] + "[/]"
         comment_table.add_row(*row, style = BG_STYLE )
 
-    comment_panel = Panel(
-        Align.center(
-            Group(Align.left(comment_table,vertical='top')), vertical = "top"
-        ),
-        box = box.ROUNDED,
-        title = "[bold yellow]Comentarios[/]",
-        title_align = "center",
-        subtitle = "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]"\
-            + str(results['pages_no']) + "[/] " \
-            "de [bold green]" + str(results['total']) + "[/] comentario(s)[/]",
-        subtitle_align = "center",
-        padding = 0 
-    )
-
-    return comment_panel
+    return comment_table
 
 def not_comments(text) -> Panel:
     """Show Not Comments Panel"""
@@ -711,7 +700,7 @@ def get_selected_subtitle_id(table_title, results, metadata):
                         if aaData is not None:
                             comments = get_list_Dict(aaData['aaData'])
                             comments = parse_list_comments(comments) if comments is not None else None
-                            comments = paginate(comments, 8) if comments is not None else None
+                            comments = paginate(comments, 5) if comments is not None else None
                         else:
                             show_comments = False
                             comment_msg = ":neutral_face: [bold red]¡No se pudieron cargar los comentarios![/]"
@@ -726,7 +715,10 @@ def get_selected_subtitle_id(table_title, results, metadata):
                     with console.screen(hide_cursor=True) as screen_comments:
                         while True:
                             if show_comments :
-                                layout_comments['table'].update(make_comments_panel(title, comments, cpage))
+                                layout_comments['table'].update(Align.center(
+                                    Group(Align.center(make_comments_table(title, comments, cpage), vertical="top")), vertical='top'
+                                    )
+                                )
                             else :
                                 layout_comments['table'].update(not_comments(comment_msg))
                             
