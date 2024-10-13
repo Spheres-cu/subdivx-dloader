@@ -718,11 +718,10 @@ def get_selected_subtitle_id(table_title, results, metadata):
                             comments = get_list_Dict(aaData['aaData'])
                             comments = parse_list_comments(comments) if comments is not None else None
                             comments = paginate(comments, 5) if comments is not None else None
+                            if comments is None:
+                                show_comments = False
+                                comment_msg = ":neutral_face: [bold red]¡No se pudieron cargar los comentarios![/]"
                         else:
-                            show_comments = False
-                            comment_msg = ":neutral_face: [bold red]¡No se pudieron cargar los comentarios![/]"
-                        
-                        if comments is None:
                             show_comments = False
                             comment_msg = ":neutral_face: [bold red]¡No se pudieron cargar los comentarios![/]"
                     else:
