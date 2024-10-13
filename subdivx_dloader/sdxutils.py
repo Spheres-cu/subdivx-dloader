@@ -144,8 +144,6 @@ def load_Cookie():
 
     return sdx_cookie
 
-headers['Cookie'] = check_Cookie_Status()
-
 #### sdxlib utils ####
 def extract_meta_data(filename, kword):
     """Extract metadata from a filename based in matchs of keywords
@@ -881,6 +879,9 @@ def extract_subtitles(compressed_sub_file, temp_file, topath):
         compressed_sub_file.close()
         logger.debug(f"Done extract subtitle!")
         console.print(":white_check_mark: Done extract subtitle!", emoji=True, new_line_start=True)
+
+### Checking cookie ###
+headers['Cookie'] = check_Cookie_Status()
 
 ### Store aadata test ###
 def store_aadata(aadata):
