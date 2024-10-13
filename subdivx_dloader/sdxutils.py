@@ -583,12 +583,11 @@ def generate_results(title, results, page, selected) -> Layout:
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
-                caption="MOVERSE: [[bold green] \u2193 \u2191 \u2192 \u2190 [/]] | " \
-                "DESCARGAR: [[bold green]ENTER[/]]\n\n" \
-                "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]C[/]] COMENTARIOS | [[bold green]S[/]] SALIR\n\n" \
-                "ORDENAR POR FECHA: [[bold green]\u2193 PgDn[/]] [[bold green]\u2191 PgUp[/]] DEFECTO:[[bold green]F[/]]\n\n"\
-                "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
-                "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
+                caption="seleccionar:[bold green]\u2193 \u2191 \u2192 \u2190[/] | " \
+                "descargar:[bold green]ENTER[/] | descrip.:[bold green]D[/] | coment.:[bold green]C[/] | salir:[bold green]S[/]\n" \
+                "ord.fecha:[bold green]\u2193 PgDn[/] [bold green]\u2191 PgUp[/] | defecto:[bold green]F[/]\n\n"\
+                "[italic]Página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]"\
+                + str(results['pages_no']) + "[/] de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                 title_style="bold green",
                 show_header=True, header_style="bold yellow", caption_style="bold bright_yellow", show_lines=False)
     
