@@ -584,15 +584,16 @@ def generate_results(title, results, page, selected) -> Layout:
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
                 caption="MOVERSE: [[bold green] \u2193 \u2191 \u2192 \u2190 [/]] | " \
-                "DESCARGAR: [[bold green]Enter[/]]\n\n" \
-                "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]C[/]] COMENTARIOS |[[bold green]S[/]] SALIR\n\n" \
+                "DESCARGAR: [[bold green]ENTER[/]]\n\n" \
+                "[[bold green]D[/]] DESCRIPCIÓN | [[bold green]C[/]] COMENTARIOS | [[bold green]S[/]] SALIR\n\n" \
+                "ORDENAR POR FECHA: [[bold green]\u2193 PgDn[/]] [[bold green]\u2191 PgUp[/]] DEFECTO:[[bold green]F[/]]\n\n"\
                 "[italic] Mostrando página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]" + str(results['pages_no']) + "[/] " \
                 "de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                 title_style="bold green",
                 show_header=True, header_style="bold yellow", caption_style="bold bright_yellow", show_lines=False)
     
     table.add_column("#", justify="right", vertical="middle", style="bold green")
-    table.add_column("Título", justify="left", vertical="middle", style="white")
+    table.add_column("Título", justify="left", vertical="middle", style="white", ratio=2)
     table.add_column("Descargas", justify="center", vertical="middle")
     table.add_column("Usuario", justify="center", vertical="middle")
     table.add_column("Fecha", justify="center", vertical="middle")
@@ -650,10 +651,30 @@ def get_selected_subtitle_id(table_title, results, metadata):
             while True:
                 live.console.show_cursor(False)
                 ch = readkey()
-                if ch == key.UP or ch == key.PAGE_UP:
+                if ch == key.UP:
                     selected = max(0, selected - 1)
-
-                if ch == key.DOWN or ch == key.PAGE_DOWN:
+                
+                if ch == key.PAGE_UP:
+                    results_pages = sorted(results, key=lambda item: (
+                                    datetime.strptime(item['fecha_subida'],'%d/%m/%Y %H:%M')
+                                    if item['fecha_subida'] != "--- --" else datetime.min
+                                    ), reverse=False
+                                )
+                    results_pages = paginate(results_pages, 10)
+                
+                if ch == key.PAGE_DOWN:
+                    results_pages = sorted(results, key=lambda item: (
+                                    datetime.strptime(item['fecha_subida'],'%d/%m/%Y %H:%M')
+                                    if item['fecha_subida'] != "--- --" else datetime.min
+                                    ), reverse=True
+                                )
+                    results_pages = paginate(results_pages, 10)
+                
+                if ch in ["F", "f"]:
+                      results_pages = sorted(results, key=lambda item: (item['score'], item['descargas']), reverse=True)
+                      results_pages = paginate(results_pages, 10)
+                
+                if ch == key.DOWN:
                     selected = min(len(results_pages['pages'][page]) - 1, selected + 1)
 
                 if ch in ["D", "d"]:
