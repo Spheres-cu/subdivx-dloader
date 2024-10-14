@@ -187,16 +187,16 @@ def match_text(title, number, inf_sub, text):
   # Perform searches
   r = True if re_full_match.search(text.strip()) else False
   match_type = 'full' if r else None
-  if not r: logger.debug(f'FullMatch text: {text} Found: {match_type} {r}')
+  logger.debug(f'FullMatch text: {text} Found: {match_type} {r}')
 
   if not r:
     r = True if re_full_pattern.search(text.strip()) else False
-    match_type = 'full' if r else None 
-    if not r: logger.debug(f'FullPattern text: {text} Found:{match_type} {r}')
+    match_type = 'pattern' if r else None 
+    logger.debug(f'FullPattern text: {text} Found:{match_type} {r}')
 
   if not r :
     rtitle = True if re_title_pattern.search(text.strip()) else False
-    if not rtitle: logger.debug(f'Title Match: {title} Found: {rtitle}')
+    logger.debug(f'Title Match: {title} Found: {rtitle}')
 
     for num in number.split(" "):
         if not inf_sub['season']:
@@ -204,7 +204,7 @@ def match_text(title, number, inf_sub, text):
         else:
            rnumber = True if re.search(rf"\b{num}.*\b", text, re.I) else False
     
-    if not rnumber: logger.debug(f'Number Match: {number} Found: {rnumber}')
+    logger.debug(f'Number Match: {number} Found: {rnumber}')
 
     if inf_sub['type'] == "movie" :
         raka = True if re.search(rf"\b{aka}\b", text, re.I) else False
@@ -215,25 +215,25 @@ def match_text(title, number, inf_sub, text):
         r = True if rtitle and rnumber else False
         match_type = 'partial' if r else None
 
-    if not r: logger.debug(f'Partial Match text: {text}:{match_type} {r}')
+    logger.debug(f'Partial Match text: {text}:{match_type} {r}')
 
   if not r:
     if all(re.search(rf"\b{word}\b", text, re.I) for word in search.split()) :
         r = True if rnumber and raka else False
         match_type = 'partial' if r else None
-    if not r: logger.debug(f'All Words Match Search: {search.split()} in {text}:{match_type} {r}')
+    logger.debug(f'All Words Match Search: {search.split()} in {text}:{match_type} {r}')
 
   if not r:
     if all(re.search(rf"\b{word}\b", text, re.I) for word in title.split()) :
         r = True if rnumber else False
         match_type = 'partial' if r else None
-    if not r: logger.debug(f'All Words Match title and number: {title.split()} in {text}: {match_type} {r}')
+    logger.debug(f'All Words Match title and number: {title.split()} in {text}: {match_type} {r}')
 
   if not r:
     if any(re.search(rf"\b{word}\b", text, re.I) for word in title.split()) :
         r = True if rnumber else False
         match_type = 'any' if r else None
-    if not r: logger.debug(f'Any Words Match title and number: {title.split()} in {text}: {match_type} {r}')
+    logger.debug(f'Any Words Match title and number: {title.split()} in {text}: {match_type} {r}')
        
   return match_type 
 
@@ -242,6 +242,7 @@ def get_filtered_results (title, number, inf_sub, list_Subs_Dicts):
     
     filtered_results = []
     lst_full = []
+    lst_pattern = []
     lst_partial = []
     lst_any = []
 
@@ -249,6 +250,8 @@ def get_filtered_results (title, number, inf_sub, list_Subs_Dicts):
         mtype = match_text(title, number, inf_sub, subs_dict['titulo'])
         if mtype == 'full':
             lst_full.append(subs_dict)
+        elif mtype == 'pattern':
+            lst_pattern.append(subs_dict)
         elif mtype == 'partial':
             lst_partial.append(subs_dict)
         else:
@@ -256,10 +259,24 @@ def get_filtered_results (title, number, inf_sub, list_Subs_Dicts):
                 lst_any.append(subs_dict)
     
     if inf_sub['season']:
-        filtered_results = lst_full if len(lst_full) !=0 else lst_partial
-    else:
+        filtered_results = lst_full + lst_partial if len(lst_partial) !=0 else lst_full + lst_pattern
+    
+    if inf_sub['type'] == "episode" and not inf_sub['season']:
+
         if len(lst_full) != 0:
             filtered_results = lst_full
+        elif len(lst_partial) != 0:
+            filtered_results = lst_partial
+        elif len(lst_pattern) != 0:
+            filtered_results = lst_pattern
+        else:
+            filtered_results = lst_any
+    
+    if inf_sub['type'] == "movie":
+
+        if len(lst_full) != 0 or len(lst_pattern) != 0:
+            filtered_results = lst_full + lst_pattern
+
         elif len(lst_partial) != 0:
             filtered_results = lst_partial
         else:
