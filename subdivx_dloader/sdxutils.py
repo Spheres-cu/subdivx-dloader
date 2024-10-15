@@ -598,9 +598,9 @@ def generate_results(title, results, page, selected) -> Layout:
     layout_results = make_layout() 
 
     table = Table(box=box.SIMPLE_HEAD, title=">> Resultados para: " + str(title), 
-                caption="seleccionar:[bold green]\u2193 \u2191 \u2192 \u2190[/] | " \
-                "descargar:[bold green]ENTER[/] | descrip.:[bold green]D[/] | coment.:[bold green]C[/] | salir:[bold green]S[/]\n" \
-                "ord.fecha:[bold green]\u2193 PgDn[/] [bold green]\u2191 PgUp[/] | defecto:[bold green]F[/]\n\n"\
+                caption="Menú:[bold green]\u2193 \u2191 \u2192 \u2190[/] | " \
+                "Descargar:[bold green]ENTER[/] | Descripción:[bold green]D[/] | Comentarios:[bold green]C[/] | Salir:[bold green]S[/]\n" \
+                "Ordenar x Fecha:[bold green]\u2193 PgDn[/] [bold green]\u2191 PgUp[/] | Defecto:[bold green]F[/]\n\n"\
                 "[italic]Página [bold white on medium_purple3] " + str(page + 1) +" [/] de [bold medium_purple3]"\
                 + str(results['pages_no']) + "[/] de [bold green]" + str(results['total']) + "[/] resultado(s)[/]",
                 title_style="bold green",
