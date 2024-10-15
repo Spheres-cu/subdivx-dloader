@@ -169,7 +169,7 @@ def main():
             url = get_subtitle_url(
                 title, number,
                 metadata,
-                no_choose=lst_args["no_choose"],
+                no_choose=lst_args['no_choose'],
                 inf_sub=inf_sub)
             
         except NoResultsError as e:
@@ -178,7 +178,7 @@ def main():
 
         if (url is not None):
             with subtitle_renamer(filepath, inf_sub=inf_sub):
-                 get_subtitle(url, topath = args.path)
+                 get_subtitle(url, topath = lst_args['path'])
 
 if __name__ == '__main__':
     main()
