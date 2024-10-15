@@ -89,7 +89,20 @@ def main():
                         default=False, help="override existing file")
     parser.add_argument('--keyword','-k',type=str,help="Add keyword to search among subtitles")
     parser.add_argument('--title','-t',type=str,help="Set the title of the show")
+    parser.add_argument('--imdb','-i',type=str,help="Search by IMDB ID")
     args = parser.parse_args()
+
+    lst_args = {
+        "path" :args.path,
+        "quiet" : args.quiet,
+        "verbose" : args.verbose,
+        "no_choose": args.no_choose,
+        "Season": args.Season,
+        "force": args.force,
+        "keyword": args.keyword,
+        "title": args.title,
+        "imdb": args.imdb
+    }
 
     # Setting logger
     setup_logger(LOGGER_LEVEL if not args.verbose else logging.DEBUG)
@@ -156,7 +169,7 @@ def main():
             url = get_subtitle_url(
                 title, number,
                 metadata,
-                no_choose=args.no_choose,
+                no_choose=lst_args["no_choose"],
                 inf_sub=inf_sub)
             
         except NoResultsError as e:
