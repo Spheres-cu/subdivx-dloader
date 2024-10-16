@@ -246,6 +246,9 @@ def get_filtered_results (title, number, inf_sub, list_Subs_Dicts):
     lst_partial = []
     lst_any = []
 
+    if inf_sub['type'] == "movie" and inf_sub['number'] == "":
+        return list_Subs_Dicts
+
     for subs_dict in list_Subs_Dicts:
         mtype = match_text(title, number, inf_sub, subs_dict['titulo'])
         if mtype == 'full':
