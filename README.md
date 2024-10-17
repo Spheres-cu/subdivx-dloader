@@ -1,6 +1,6 @@
 # This repository will no longer be maintained as it is now moving to a new version:
 
-## [Spheres-cu subdx-dl] (https://github.com/Spheres-cu/subdx-dl)
+## [Spheres-cu/subdx-dl](https://github.com/Spheres-cu/subdx-dl)
 
 
 A fork of kabutor fork of  Martín Gaitán's fork of Michel Peterson's subdivx.com-subtitle-retriever
